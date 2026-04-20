@@ -30,7 +30,7 @@ def bfs(graph, start):
 
 ## Stepping through BFS from node A
 
-```scene step=0 narration="Starting at A. Queue: [A]. Visited: {A}."
+```scene step=0 narration="Starting at A. Queue: [A]. Visited: {A}." code_lines=4-6
 { "primitives": [
   {"type":"graph","nodes":[
     {"id":"A","x":400,"y":100,"label":"A"},
@@ -44,7 +44,7 @@ def bfs(graph, start):
 ] }
 ```
 
-```scene step=1 narration="Visit A. Enqueue neighbors B and C. Queue: [B, C]."
+```scene step=1 narration="Visit A. Enqueue neighbors B and C. Queue: [B, C]." code_lines=8-13
 { "primitives": [
   {"type":"graph","nodes":[
     {"id":"A","x":400,"y":100,"label":"A"},
@@ -59,7 +59,7 @@ def bfs(graph, start):
 ] }
 ```
 
-```scene step=2 narration="Visit B. Enqueue D and E. Queue: [C, D, E]."
+```scene step=2 narration="Visit B. Enqueue D and E. Queue: [C, D, E]." code_lines=8-13
 { "primitives": [
   {"type":"graph","nodes":[
     {"id":"A","x":400,"y":100,"label":"A"},
@@ -74,7 +74,7 @@ def bfs(graph, start):
 ] }
 ```
 
-```scene step=3 narration="Visit C. Enqueue F. Queue: [D, E, F]."
+```scene step=3 narration="Visit C. Enqueue F. Queue: [D, E, F]." code_lines=8-13
 { "primitives": [
   {"type":"graph","nodes":[
     {"id":"A","x":400,"y":100,"label":"A"},
@@ -89,7 +89,7 @@ def bfs(graph, start):
 ] }
 ```
 
-```scene step=4 narration="Visit D, E, F in turn — all neighbors already visited. Queue empties."
+```scene step=4 narration="Visit D, E, F in turn — all neighbors already visited. Queue empties." code_lines=14
 { "primitives": [
   {"type":"graph","nodes":[
     {"id":"A","x":400,"y":100,"label":"A"},

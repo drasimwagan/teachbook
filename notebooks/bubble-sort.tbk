@@ -24,31 +24,31 @@ def bubble_sort(arr):
 
 ## Stepping through `[5, 2, 8, 1, 9]`
 
-```scene step=0 narration="Starting array. Nothing is sorted yet."
+```scene step=0 narration="Enter function. n = 5. First pass begins." code_lines=2
 { "primitives": [ { "type": "grid", "values": [5, 2, 8, 1, 9] } ] }
 ```
 
-```scene step=1 narration="Compare indices 0 and 1: 5 > 2, so swap."
+```scene step=1 narration="Compare indices 0 and 1: 5 > 2 is true." code_lines=5
 { "primitives": [ { "type": "grid", "values": [5, 2, 8, 1, 9], "highlight": [0, 1] } ] }
 ```
 
-```scene step=2 narration="After swap: [2, 5, 8, 1, 9]."
+```scene step=2 narration="Swap: array becomes [2, 5, 8, 1, 9]." code_lines=6
 { "primitives": [ { "type": "grid", "values": [2, 5, 8, 1, 9], "highlight": [0, 1] } ] }
 ```
 
-```scene step=3 narration="Compare indices 1 and 2: 5 < 8, no swap."
+```scene step=3 narration="Compare indices 1 and 2: 5 < 8, no swap." code_lines=5
 { "primitives": [ { "type": "grid", "values": [2, 5, 8, 1, 9], "highlight": [1, 2] } ] }
 ```
 
-```scene step=4 narration="Compare indices 2 and 3: 8 > 1, swap."
+```scene step=4 narration="Compare indices 2 and 3: 8 > 1, swap needed." code_lines=5
 { "primitives": [ { "type": "grid", "values": [2, 5, 8, 1, 9], "highlight": [2, 3] } ] }
 ```
 
-```scene step=5 narration="After swap: [2, 5, 1, 8, 9]."
+```scene step=5 narration="Swap: array becomes [2, 5, 1, 8, 9]." code_lines=6
 { "primitives": [ { "type": "grid", "values": [2, 5, 1, 8, 9], "highlight": [2, 3] } ] }
 ```
 
-```scene step=6 narration="End of first pass. 9 has bubbled to the end."
+```scene step=6 narration="End of first pass. 9 has bubbled to the end." code_lines=3
 { "primitives": [ { "type": "grid", "values": [2, 5, 1, 8, 9], "highlight": [4] } ] }
 ```
 

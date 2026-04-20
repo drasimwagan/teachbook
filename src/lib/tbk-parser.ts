@@ -88,6 +88,7 @@ export function parseTbk(source: string): ParseResult {
           current.steps.push({
             narration: meta.narration ?? "",
             scene,
+            codeLines: parseCodeLines(meta.code_lines),
           });
         } catch (e) {
           errors.push(
@@ -130,6 +131,16 @@ export function parseTbk(source: string): ParseResult {
     notebook: { metadata, cells, totalSteps, source },
     errors,
   };
+}
+
+function parseCodeLines(v: string | undefined): [number, number] | undefined {
+  if (!v) return undefined;
+  const m = v.match(/^(\d+)(?:-(\d+))?$/);
+  if (!m) return undefined;
+  const start = parseInt(m[1], 10);
+  const end = m[2] ? parseInt(m[2], 10) : start;
+  if (isNaN(start) || isNaN(end) || start < 1 || end < start) return undefined;
+  return [start, end];
 }
 
 function parseSceneMeta(meta: string): Record<string, string> {

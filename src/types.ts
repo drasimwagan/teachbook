@@ -68,7 +68,16 @@ export type ScenePrimitive =
 
 export type Scene = { primitives: ScenePrimitive[] };
 
-export type Step = { narration: string; scene: Scene };
+export type Step = {
+  narration: string;
+  scene: Scene;
+  /**
+   * Lines of the cell's code block to highlight for this step, 1-indexed and
+   * inclusive on both ends. Relative to the code block, not the source file.
+   * Undefined means no code highlight for this step.
+   */
+  codeLines?: [number, number];
+};
 
 export type Cell = {
   kind: "concept" | "quiz";

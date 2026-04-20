@@ -39,7 +39,12 @@ export function serializeTbk(nb: Notebook): string {
 
     for (const step of cell.steps) {
       const narr = step.narration.replace(/"/g, '\\"');
-      parts.push(`\`\`\`scene step=${globalStep} narration="${narr}"`);
+      let meta = `step=${globalStep} narration="${narr}"`;
+      if (step.codeLines) {
+        const [a, b] = step.codeLines;
+        meta += ` code_lines=${a === b ? a : `${a}-${b}`}`;
+      }
+      parts.push(`\`\`\`scene ${meta}`);
       parts.push(JSON.stringify(step.scene));
       parts.push("```");
       parts.push("");
