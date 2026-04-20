@@ -30,7 +30,28 @@ Scene primitive types (pick those that fit; all have type=<name>):
   // Prefer LaTeX for any equation. Escape backslashes in JSON: \\\\frac, \\\\theta, \\\\approx.
 - axes: { type: "axes", xMin, xMax, yMin, yMax }  // include with physics/plots
 - plot: { type: "plot", points: [[x,y],...], label? }
-- graph: { type: "graph", nodes: [{id, x, y, label?}], edges: [[a,b],...] }
+- graph: {
+    type: "graph",
+    directed?,
+    nodes: [{id, x, y, label?, fill?, highlight?}],
+    edges: [[a,b], ...]  // simple
+           OR {from, to, weight?, highlight?, directed?}  // rich
+  }
+  // Use node.highlight for "currently active" (yellow ring).
+  // Use node.fill to indicate state: "#93c5fd" = discovered, "#86efac" = visited.
+  // Use edge.highlight on the edge being traversed/relaxed right now.
+  // Use edge.weight for weighted graphs (Dijkstra, MST, etc.).
+  // Set directed: true at graph level for all-directed, or per-edge for mixed.
+- matrix: {
+    type: "matrix",
+    rows: [[...]],         // 2D array of values (numbers or strings)
+    x?, y?, cellSize?, label?,
+    rowLabels?: [...],
+    colLabels?: [...],
+    highlight?: [[r, c], ...]  // (row, col) pairs
+  }
+  // Use for DP tables, confusion matrices, Punnett squares, etc.
+  // Use "·" or "_" for not-yet-filled cells so students see the fill progress.
 
 Prose supports LaTeX too: inline $...$ and block $$...$$. Prefer this over
 unicode subscripts or fractions.

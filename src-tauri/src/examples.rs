@@ -14,6 +14,8 @@ const MERGE_SORT: &str = include_str!("../../notebooks/merge-sort.tbk");
 const SHM: &str = include_str!("../../notebooks/simple-harmonic-motion.tbk");
 const MITOSIS: &str = include_str!("../../notebooks/mitosis.tbk");
 const RC_CIRCUIT: &str = include_str!("../../notebooks/rc-circuit.tbk");
+const DIJKSTRA: &str = include_str!("../../notebooks/dijkstra.tbk");
+const LCS_DP: &str = include_str!("../../notebooks/lcs-dp.tbk");
 
 #[tauri::command]
 pub fn list_bundled_notebooks() -> Vec<BundledNotebook> {
@@ -34,6 +36,14 @@ pub fn list_bundled_notebooks() -> Vec<BundledNotebook> {
         BundledNotebook {
             filename: "bfs-graph.tbk".into(),
             content: BFS_GRAPH.into(),
+        },
+        BundledNotebook {
+            filename: "dijkstra.tbk".into(),
+            content: DIJKSTRA.into(),
+        },
+        BundledNotebook {
+            filename: "lcs-dp.tbk".into(),
+            content: LCS_DP.into(),
         },
         // Physics
         BundledNotebook {

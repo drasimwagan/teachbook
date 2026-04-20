@@ -7,9 +7,9 @@ author: Teachbook starter
 
 # Breadth-First Search
 
-BFS explores a graph level by level, starting from a source node. It uses a
-queue: visit the source, enqueue its neighbors, then repeat with the next node
-in the queue. Each node is visited exactly once.
+BFS explores a graph level by level starting from a source node. It uses a
+**FIFO queue**: visit the source, enqueue its neighbors, then repeat with the
+next node pulled from the queue. Each node is visited exactly once.
 
 ```python
 from collections import deque
@@ -28,83 +28,147 @@ def bfs(graph, start):
     return order
 ```
 
+Each node has one of three visual states:
+
+- **Gray** — not yet discovered
+- **Blue** — discovered (in the queue) but not yet visited
+- **Green** — visited (popped from the queue; neighbors processed)
+
+The currently-active node (the one just popped) gets a yellow outline.
+
 ## Stepping through BFS from node A
 
-```scene step=0 narration="Starting at A. Queue: [A]. Visited: {A}." code_lines=4-6
+```scene step=0 narration="Starting state. A is enqueued and marked discovered (blue)." code_lines=4-6
 { "primitives": [
   {"type":"graph","nodes":[
-    {"id":"A","x":400,"y":100,"label":"A"},
+    {"id":"A","x":400,"y":110,"label":"A","fill":"#93c5fd"},
     {"id":"B","x":250,"y":220,"label":"B"},
     {"id":"C","x":550,"y":220,"label":"C"},
     {"id":"D","x":150,"y":360,"label":"D"},
     {"id":"E","x":350,"y":360,"label":"E"},
     {"id":"F","x":650,"y":360,"label":"F"}
   ],"edges":[["A","B"],["A","C"],["B","D"],["B","E"],["C","F"]]},
-  {"type":"label","x":20,"y":40,"text":"Queue: [A]   Visited: {A}"}
+  {"type":"label","id":"q","x":40,"y":60,"text":"Queue: [A]"},
+  {"type":"label","id":"v","x":40,"y":80,"text":"Visited: {A}"},
+  {"type":"label","id":"o","x":40,"y":100,"text":"Order: —"}
 ] }
 ```
 
-```scene step=1 narration="Visit A. Enqueue neighbors B and C. Queue: [B, C]." code_lines=8-13
+```scene step=1 narration="Pop A. A is now 'visiting' — outlined in yellow. Scan its neighbors." code_lines=8-9
 { "primitives": [
   {"type":"graph","nodes":[
-    {"id":"A","x":400,"y":100,"label":"A"},
+    {"id":"A","x":400,"y":110,"label":"A","fill":"#93c5fd","highlight":true},
     {"id":"B","x":250,"y":220,"label":"B"},
     {"id":"C","x":550,"y":220,"label":"C"},
     {"id":"D","x":150,"y":360,"label":"D"},
     {"id":"E","x":350,"y":360,"label":"E"},
     {"id":"F","x":650,"y":360,"label":"F"}
   ],"edges":[["A","B"],["A","C"],["B","D"],["B","E"],["C","F"]]},
-  {"type":"label","x":20,"y":40,"text":"Queue: [B, C]   Visited: {A, B, C}"},
-  {"type":"label","x":20,"y":60,"text":"Order: A"}
+  {"type":"label","id":"q","x":40,"y":60,"text":"Queue: []"},
+  {"type":"label","id":"v","x":40,"y":80,"text":"Visited: {A}"},
+  {"type":"label","id":"o","x":40,"y":100,"text":"Order: A"}
 ] }
 ```
 
-```scene step=2 narration="Visit B. Enqueue D and E. Queue: [C, D, E]." code_lines=8-13
+```scene step=2 narration="B and C are undiscovered neighbors of A. Enqueue them; mark discovered (blue)." code_lines=10-13
 { "primitives": [
   {"type":"graph","nodes":[
-    {"id":"A","x":400,"y":100,"label":"A"},
-    {"id":"B","x":250,"y":220,"label":"B"},
-    {"id":"C","x":550,"y":220,"label":"C"},
+    {"id":"A","x":400,"y":110,"label":"A","fill":"#86efac"},
+    {"id":"B","x":250,"y":220,"label":"B","fill":"#93c5fd"},
+    {"id":"C","x":550,"y":220,"label":"C","fill":"#93c5fd"},
     {"id":"D","x":150,"y":360,"label":"D"},
     {"id":"E","x":350,"y":360,"label":"E"},
     {"id":"F","x":650,"y":360,"label":"F"}
-  ],"edges":[["A","B"],["A","C"],["B","D"],["B","E"],["C","F"]]},
-  {"type":"label","x":20,"y":40,"text":"Queue: [C, D, E]   Visited: {A, B, C, D, E}"},
-  {"type":"label","x":20,"y":60,"text":"Order: A, B"}
+  ],"edges":[{"from":"A","to":"B","highlight":true},{"from":"A","to":"C","highlight":true},["B","D"],["B","E"],["C","F"]]},
+  {"type":"label","id":"q","x":40,"y":60,"text":"Queue: [B, C]"},
+  {"type":"label","id":"v","x":40,"y":80,"text":"Visited: {A, B, C}"},
+  {"type":"label","id":"o","x":40,"y":100,"text":"Order: A"}
 ] }
 ```
 
-```scene step=3 narration="Visit C. Enqueue F. Queue: [D, E, F]." code_lines=8-13
+```scene step=3 narration="Pop B from the front of the queue. B is now the active node." code_lines=8-9
 { "primitives": [
   {"type":"graph","nodes":[
-    {"id":"A","x":400,"y":100,"label":"A"},
-    {"id":"B","x":250,"y":220,"label":"B"},
-    {"id":"C","x":550,"y":220,"label":"C"},
+    {"id":"A","x":400,"y":110,"label":"A","fill":"#86efac"},
+    {"id":"B","x":250,"y":220,"label":"B","fill":"#93c5fd","highlight":true},
+    {"id":"C","x":550,"y":220,"label":"C","fill":"#93c5fd"},
     {"id":"D","x":150,"y":360,"label":"D"},
     {"id":"E","x":350,"y":360,"label":"E"},
     {"id":"F","x":650,"y":360,"label":"F"}
   ],"edges":[["A","B"],["A","C"],["B","D"],["B","E"],["C","F"]]},
-  {"type":"label","x":20,"y":40,"text":"Queue: [D, E, F]   Visited: {A, B, C, D, E, F}"},
-  {"type":"label","x":20,"y":60,"text":"Order: A, B, C"}
+  {"type":"label","id":"q","x":40,"y":60,"text":"Queue: [C]"},
+  {"type":"label","id":"v","x":40,"y":80,"text":"Visited: {A, B, C}"},
+  {"type":"label","id":"o","x":40,"y":100,"text":"Order: A, B"}
 ] }
 ```
 
-```scene step=4 narration="Visit D, E, F in turn — all neighbors already visited. Queue empties." code_lines=14
+```scene step=4 narration="B's neighbors are D and E — both undiscovered. Enqueue them." code_lines=10-13
 { "primitives": [
   {"type":"graph","nodes":[
-    {"id":"A","x":400,"y":100,"label":"A"},
-    {"id":"B","x":250,"y":220,"label":"B"},
-    {"id":"C","x":550,"y":220,"label":"C"},
-    {"id":"D","x":150,"y":360,"label":"D"},
-    {"id":"E","x":350,"y":360,"label":"E"},
+    {"id":"A","x":400,"y":110,"label":"A","fill":"#86efac"},
+    {"id":"B","x":250,"y":220,"label":"B","fill":"#86efac"},
+    {"id":"C","x":550,"y":220,"label":"C","fill":"#93c5fd"},
+    {"id":"D","x":150,"y":360,"label":"D","fill":"#93c5fd"},
+    {"id":"E","x":350,"y":360,"label":"E","fill":"#93c5fd"},
     {"id":"F","x":650,"y":360,"label":"F"}
+  ],"edges":[["A","B"],["A","C"],{"from":"B","to":"D","highlight":true},{"from":"B","to":"E","highlight":true},["C","F"]]},
+  {"type":"label","id":"q","x":40,"y":60,"text":"Queue: [C, D, E]"},
+  {"type":"label","id":"v","x":40,"y":80,"text":"Visited: {A, B, C, D, E}"},
+  {"type":"label","id":"o","x":40,"y":100,"text":"Order: A, B"}
+] }
+```
+
+```scene step=5 narration="Pop C. Its only undiscovered neighbor is F — enqueue it." code_lines=8-13
+{ "primitives": [
+  {"type":"graph","nodes":[
+    {"id":"A","x":400,"y":110,"label":"A","fill":"#86efac"},
+    {"id":"B","x":250,"y":220,"label":"B","fill":"#86efac"},
+    {"id":"C","x":550,"y":220,"label":"C","fill":"#93c5fd","highlight":true},
+    {"id":"D","x":150,"y":360,"label":"D","fill":"#93c5fd"},
+    {"id":"E","x":350,"y":360,"label":"E","fill":"#93c5fd"},
+    {"id":"F","x":650,"y":360,"label":"F","fill":"#93c5fd"}
+  ],"edges":[["A","B"],["A","C"],["B","D"],["B","E"],{"from":"C","to":"F","highlight":true}]},
+  {"type":"label","id":"q","x":40,"y":60,"text":"Queue: [D, E, F]"},
+  {"type":"label","id":"v","x":40,"y":80,"text":"Visited: {A, B, C, D, E, F}"},
+  {"type":"label","id":"o","x":40,"y":100,"text":"Order: A, B, C"}
+] }
+```
+
+```scene step=6 narration="Pop D, E, F in sequence. All their neighbors are already visited, so no new enqueues. Queue drains to empty." code_lines=8-13
+{ "primitives": [
+  {"type":"graph","nodes":[
+    {"id":"A","x":400,"y":110,"label":"A","fill":"#86efac"},
+    {"id":"B","x":250,"y":220,"label":"B","fill":"#86efac"},
+    {"id":"C","x":550,"y":220,"label":"C","fill":"#86efac"},
+    {"id":"D","x":150,"y":360,"label":"D","fill":"#86efac"},
+    {"id":"E","x":350,"y":360,"label":"E","fill":"#86efac"},
+    {"id":"F","x":650,"y":360,"label":"F","fill":"#86efac"}
   ],"edges":[["A","B"],["A","C"],["B","D"],["B","E"],["C","F"]]},
-  {"type":"label","x":20,"y":40,"text":"Queue: []   Done"},
-  {"type":"label","x":20,"y":60,"text":"Order: A, B, C, D, E, F"}
+  {"type":"label","id":"q","x":40,"y":60,"text":"Queue: []"},
+  {"type":"label","id":"v","x":40,"y":80,"text":"Visited: {A, B, C, D, E, F}"},
+  {"type":"label","id":"o","x":40,"y":100,"text":"Order: A, B, C, D, E, F"}
+] }
+```
+
+```scene step=7 narration="While loop exits (queue empty). Return order." code_lines=14
+{ "primitives": [
+  {"type":"graph","nodes":[
+    {"id":"A","x":400,"y":110,"label":"A","fill":"#86efac"},
+    {"id":"B","x":250,"y":220,"label":"B","fill":"#86efac"},
+    {"id":"C","x":550,"y":220,"label":"C","fill":"#86efac"},
+    {"id":"D","x":150,"y":360,"label":"D","fill":"#86efac"},
+    {"id":"E","x":350,"y":360,"label":"E","fill":"#86efac"},
+    {"id":"F","x":650,"y":360,"label":"F","fill":"#86efac"}
+  ],"edges":[["A","B"],["A","C"],["B","D"],["B","E"],["C","F"]]},
+  {"type":"label","id":"result","x":40,"y":60,"text":"Returned order: [A, B, C, D, E, F]"},
+  {"type":"label","id":"note","x":40,"y":80,"text":"Level 0: A  |  Level 1: B, C  |  Level 2: D, E, F"}
 ] }
 ```
 
 ## Quiz
 
 ?? Why does BFS guarantee shortest-path (in edges) from the source to any reachable node in an unweighted graph?
->> Because BFS explores nodes in order of increasing distance from the source: all nodes at distance k are visited before any node at distance k+1. When a node is first reached, it must be via a shortest path.
+>> Because BFS explores nodes in order of increasing distance from the source: all nodes at distance $k$ are visited before any node at distance $k+1$. When a node is first reached, it must be via a shortest path.
+
+?? What changes if we use a LIFO stack instead of a FIFO queue?
+>> You get depth-first search (DFS). It dives down one branch to the bottom before backtracking, rather than exploring level by level. DFS uses less memory on wide graphs but no longer finds shortest paths.

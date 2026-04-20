@@ -61,10 +61,54 @@ export type PlotPrimitive = {
   label?: string;
 };
 
+export type GraphNode = {
+  id: string;
+  x: number;
+  y: number;
+  label?: string;
+  /** Fill color override. Default depends on `highlight`. */
+  fill?: string;
+  /** Visual emphasis (e.g. "currently active"). Yellow ring + bold label. */
+  highlight?: boolean;
+};
+
+/** Simple undirected unweighted edge. */
+export type GraphEdgeTuple = [string, string];
+
+/** Rich edge with weight, highlight, and direction overrides. */
+export type GraphEdgeObject = {
+  from: string;
+  to: string;
+  weight?: number | string;
+  /** Emphasize this edge (e.g. "currently being relaxed"). */
+  highlight?: boolean;
+  /** Per-edge directed flag; overrides graph-level `directed`. */
+  directed?: boolean;
+};
+
+export type GraphEdge = GraphEdgeTuple | GraphEdgeObject;
+
 export type GraphPrimitive = {
   type: "graph";
-  nodes: { id: string; x: number; y: number; label?: string }[];
-  edges: [string, string][];
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  /** If true, all edges without a per-edge override are drawn as arrows. */
+  directed?: boolean;
+};
+
+export type MatrixPrimitive = {
+  type: "matrix";
+  /** rows[r][c] — rectangular, all rows same length. */
+  rows: (string | number)[][];
+  x?: number;
+  y?: number;
+  cellSize?: number;
+  /** (row, col) pairs to highlight. */
+  highlight?: [number, number][];
+  rowLabels?: string[];
+  colLabels?: string[];
+  /** Caption above the matrix. */
+  label?: string;
 };
 
 export type PluginPrimitive = {
@@ -80,6 +124,7 @@ export type ScenePrimitive =
   | AxesPrimitive
   | PlotPrimitive
   | GraphPrimitive
+  | MatrixPrimitive
   | PluginPrimitive;
 
 export type Scene = { primitives: ScenePrimitive[] };

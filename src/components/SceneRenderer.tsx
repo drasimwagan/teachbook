@@ -3,9 +3,11 @@ import { motion } from "framer-motion";
 import type {
   ArrowPrimitive,
   AxesPrimitive,
+  GraphEdgeObject,
   GraphPrimitive,
   GridPrimitive,
   LabelPrimitive,
+  MatrixPrimitive,
   PlotPrimitive,
   Scene,
   ScenePrimitive,
@@ -83,6 +85,8 @@ function Primitive({ p, axes }: { p: ScenePrimitive; axes: AxisCtx }) {
       return <Plot p={p} axes={axes} />;
     case "graph":
       return <Graph p={p} />;
+    case "matrix":
+      return <Matrix p={p} />;
     default:
       return (
         <text x={10} y={20} fontSize={12} fill="#b91c1c">
@@ -304,34 +308,212 @@ function Plot({ p, axes }: { p: PlotPrimitive; axes: AxisCtx }) {
   );
 }
 
+function normalizeEdge(e: GraphPrimitive["edges"][number]): GraphEdgeObject {
+  return Array.isArray(e) ? { from: e[0], to: e[1] } : e;
+}
+
+const NODE_R = 20;
+
 function Graph({ p }: { p: GraphPrimitive }) {
   const byId = new Map(p.nodes.map((n) => [n.id, n]));
+  const graphDirected = !!p.directed;
+  const edges = p.edges.map(normalizeEdge);
+
   return (
     <g>
-      {p.edges.map(([a, b], i) => {
-        const na = byId.get(a);
-        const nb = byId.get(b);
+      <defs>
+        <marker
+          id="graph-arrow"
+          markerWidth="10"
+          markerHeight="10"
+          refX="9"
+          refY="3"
+          orient="auto"
+        >
+          <path d="M0,0 L0,6 L9,3 z" fill="#71717a" />
+        </marker>
+        <marker
+          id="graph-arrow-hl"
+          markerWidth="10"
+          markerHeight="10"
+          refX="9"
+          refY="3"
+          orient="auto"
+        >
+          <path d="M0,0 L0,6 L9,3 z" fill="#eab308" />
+        </marker>
+      </defs>
+
+      {edges.map((e, i) => {
+        const na = byId.get(e.from);
+        const nb = byId.get(e.to);
         if (!na || !nb) return null;
+        const directed = e.directed ?? graphDirected;
+        const stroke = e.highlight ? "#eab308" : "#71717a";
+        const width = e.highlight ? 3 : 1.5;
+
+        // Shorten the line so the arrowhead doesn't overlap the node circle.
+        const dx = nb.x - na.x;
+        const dy = nb.y - na.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const ux = dx / dist;
+        const uy = dy / dist;
+        const shrink = directed ? NODE_R + 4 : 0;
+        const x1 = na.x + ux * (directed ? NODE_R : 0);
+        const y1 = na.y + uy * (directed ? NODE_R : 0);
+        const x2 = nb.x - ux * shrink;
+        const y2 = nb.y - uy * shrink;
+
+        const mx = (na.x + nb.x) / 2;
+        const my = (na.y + nb.y) / 2;
+
         return (
-          <line
-            key={i}
-            x1={na.x}
-            y1={na.y}
-            x2={nb.x}
-            y2={nb.y}
-            stroke="#71717a"
-            strokeWidth={1.5}
-          />
+          <g key={i}>
+            <motion.line
+              animate={{ x1, y1, x2, y2, stroke, strokeWidth: width }}
+              transition={TWEEN}
+              markerEnd={directed ? (e.highlight ? "url(#graph-arrow-hl)" : "url(#graph-arrow)") : undefined}
+            />
+            {e.weight !== undefined && (
+              <g transform={`translate(${mx}, ${my})`}>
+                <rect
+                  x={-14}
+                  y={-9}
+                  width={28}
+                  height={16}
+                  rx={3}
+                  fill={e.highlight ? "#fef3c7" : "#fafafa"}
+                  stroke={e.highlight ? "#ca8a04" : "#d4d4d8"}
+                  strokeWidth={1}
+                />
+                <text
+                  x={0}
+                  y={3}
+                  textAnchor="middle"
+                  fontSize={11}
+                  fontWeight={600}
+                  fill={e.highlight ? "#854d0e" : "#3f3f46"}
+                >
+                  {String(e.weight)}
+                </text>
+              </g>
+            )}
+          </g>
         );
       })}
-      {p.nodes.map((n) => (
-        <g key={n.id} transform={`translate(${n.x}, ${n.y})`}>
-          <circle r={18} fill="#a5b4fc" stroke="#3730a3" strokeWidth={1.5} />
-          <text textAnchor="middle" y={5} fontSize={12} fill="#1e1b4b">
-            {n.label ?? n.id}
-          </text>
-        </g>
+
+      {p.nodes.map((n) => {
+        const fill = n.fill ?? (n.highlight ? "#fde68a" : "#a5b4fc");
+        const stroke = n.highlight ? "#ca8a04" : "#3730a3";
+        const strokeWidth = n.highlight ? 3 : 1.5;
+        return (
+          <motion.g key={n.id} animate={{ x: n.x, y: n.y }} transition={TWEEN}>
+            <motion.circle
+              r={NODE_R}
+              animate={{ fill, stroke, strokeWidth }}
+              transition={TWEEN}
+            />
+            <text textAnchor="middle" y={5} fontSize={13} fontWeight={n.highlight ? 700 : 500} fill="#1e1b4b">
+              {n.label ?? n.id}
+            </text>
+          </motion.g>
+        );
+      })}
+    </g>
+  );
+}
+
+function Matrix({ p }: { p: MatrixPrimitive }) {
+  const cell = p.cellSize ?? 44;
+  const rows = p.rows;
+  const nRows = rows.length;
+  const nCols = nRows > 0 ? rows[0].length : 0;
+  if (nRows === 0 || nCols === 0) return null;
+
+  const labelWidth = p.rowLabels ? cell * 0.8 : 0;
+  const labelHeight = p.colLabels ? cell * 0.55 : 0;
+
+  const defaultX = VIEW_W / 2 - (nCols * cell) / 2 - labelWidth / 2;
+  const defaultY = VIEW_H / 2 - (nRows * cell) / 2 - labelHeight / 2;
+  const startX = p.x ?? defaultX;
+  const startY = p.y ?? defaultY;
+
+  const gridX = startX + labelWidth;
+  const gridY = startY + labelHeight;
+
+  const highlightSet = new Set((p.highlight ?? []).map(([r, c]) => `${r},${c}`));
+  const textSize = Math.max(10, Math.round(cell * 0.38));
+  const gap = Math.max(1, Math.round(cell * 0.04));
+  const inner = cell - gap;
+
+  return (
+    <g>
+      {p.label && (
+        <text
+          x={startX}
+          y={startY - cell * 0.2}
+          fontSize={12}
+          fontWeight={600}
+          fill="currentColor"
+          className="text-zinc-700 dark:text-zinc-300"
+        >
+          {p.label}
+        </text>
+      )}
+
+      {p.colLabels?.map((lab, c) => (
+        <text
+          key={`col-${c}`}
+          x={gridX + c * cell + inner / 2}
+          y={gridY - 6}
+          textAnchor="middle"
+          fontSize={Math.max(10, Math.round(cell * 0.28))}
+          fill="#71717a"
+        >
+          {lab}
+        </text>
       ))}
+
+      {p.rowLabels?.map((lab, r) => (
+        <text
+          key={`row-${r}`}
+          x={gridX - 6}
+          y={gridY + r * cell + inner / 2 + textSize * 0.35}
+          textAnchor="end"
+          fontSize={Math.max(10, Math.round(cell * 0.28))}
+          fill="#71717a"
+        >
+          {lab}
+        </text>
+      ))}
+
+      {rows.map((row, r) =>
+        row.map((v, c) => {
+          const hl = highlightSet.has(`${r},${c}`);
+          return (
+            <g key={`${r}-${c}`} transform={`translate(${gridX + c * cell}, ${gridY + r * cell})`}>
+              <motion.rect
+                width={inner}
+                height={inner}
+                rx={3}
+                stroke="#52525b"
+                strokeWidth={hl ? 2 : 1}
+                animate={{ fill: hl ? "#fde68a" : "#e5e7eb" }}
+                transition={TWEEN}
+              />
+              <text
+                x={inner / 2}
+                y={inner / 2 + textSize * 0.35}
+                textAnchor="middle"
+                fontSize={textSize}
+                fill="#18181b"
+              >
+                {String(v)}
+              </text>
+            </g>
+          );
+        })
+      )}
     </g>
   );
 }

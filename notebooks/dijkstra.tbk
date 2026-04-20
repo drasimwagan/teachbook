@@ -1,0 +1,281 @@
+---
+version: 0.1
+title: Dijkstra's Shortest Path
+subject: algorithms
+author: Teachbook starter
+---
+
+# Dijkstra's Algorithm
+
+Dijkstra finds the shortest path from a single source to every other node in
+a graph with **non-negative** edge weights. It maintains a distance estimate
+$d[v]$ for each node (initially $\infty$ except $d[\text{source}] = 0$), then
+repeatedly:
+
+1. **Extract** the unvisited node $u$ with the smallest $d[u]$.
+2. **Relax** each outgoing edge $(u, v)$ with weight $w$:
+   if $d[u] + w < d[v]$, set $d[v] = d[u] + w$.
+3. Mark $u$ as visited.
+
+Once a node is visited, $d$ cannot improve (because all remaining weights are
+non-negative). With a priority queue the total cost is $O((V + E) \log V)$.
+
+```python
+import heapq
+
+def dijkstra(graph, source):
+    dist = {node: float("inf") for node in graph}
+    dist[source] = 0
+    visited = set()
+    pq = [(0, source)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if u in visited:
+            continue
+        visited.add(u)
+        for v, w in graph[u]:
+            if d + w < dist[v]:
+                dist[v] = d + w
+                heapq.heappush(pq, (dist[v], v))
+    return dist
+```
+
+## Graph
+
+Five nodes A–E with weighted directed edges:
+
+- A → B (4), A → C (2)
+- C → B (1), C → D (5)
+- B → D (3), B → E (2)
+- D → E (1)
+
+Source: **A**. We'll track `dist` at each step and highlight edges as they
+relax.
+
+```scene step=0 narration="Setup: dist[A] = 0, all others = ∞. PQ has just (0, A)." code_lines=4-7
+{ "primitives": [
+  {"type":"graph","directed":true,"nodes":[
+    {"id":"A","x":150,"y":230,"label":"A","fill":"#93c5fd"},
+    {"id":"B","x":400,"y":110,"label":"B"},
+    {"id":"C","x":400,"y":360,"label":"C"},
+    {"id":"D","x":620,"y":230,"label":"D"},
+    {"id":"E","x":720,"y":400,"label":"E"}
+  ],"edges":[
+    {"from":"A","to":"B","weight":4},
+    {"from":"A","to":"C","weight":2},
+    {"from":"C","to":"B","weight":1},
+    {"from":"C","to":"D","weight":5},
+    {"from":"B","to":"D","weight":3},
+    {"from":"B","to":"E","weight":2},
+    {"from":"D","to":"E","weight":1}
+  ]},
+  {"type":"label","id":"d","x":40,"y":70,"text":"dist:  A=0, B=∞, C=∞, D=∞, E=∞"},
+  {"type":"label","id":"pq","x":40,"y":95,"text":"PQ:  [(0, A)]"}
+] }
+```
+
+```scene step=1 narration="Pop (0, A). Mark A visited. Now relax A's outgoing edges." code_lines=9-12
+{ "primitives": [
+  {"type":"graph","directed":true,"nodes":[
+    {"id":"A","x":150,"y":230,"label":"A","fill":"#86efac","highlight":true},
+    {"id":"B","x":400,"y":110,"label":"B"},
+    {"id":"C","x":400,"y":360,"label":"C"},
+    {"id":"D","x":620,"y":230,"label":"D"},
+    {"id":"E","x":720,"y":400,"label":"E"}
+  ],"edges":[
+    {"from":"A","to":"B","weight":4},
+    {"from":"A","to":"C","weight":2},
+    {"from":"C","to":"B","weight":1},
+    {"from":"C","to":"D","weight":5},
+    {"from":"B","to":"D","weight":3},
+    {"from":"B","to":"E","weight":2},
+    {"from":"D","to":"E","weight":1}
+  ]},
+  {"type":"label","id":"d","x":40,"y":70,"text":"dist:  A=0, B=∞, C=∞, D=∞, E=∞"},
+  {"type":"label","id":"pq","x":40,"y":95,"text":"PQ:  []  (about to push relaxed neighbors)"}
+] }
+```
+
+```scene step=2 narration="Relax A→B (weight 4): 0 + 4 < ∞, so dist[B] = 4. Relax A→C (weight 2): dist[C] = 2." code_lines=13-16
+{ "primitives": [
+  {"type":"graph","directed":true,"nodes":[
+    {"id":"A","x":150,"y":230,"label":"A","fill":"#86efac"},
+    {"id":"B","x":400,"y":110,"label":"B","fill":"#93c5fd"},
+    {"id":"C","x":400,"y":360,"label":"C","fill":"#93c5fd"},
+    {"id":"D","x":620,"y":230,"label":"D"},
+    {"id":"E","x":720,"y":400,"label":"E"}
+  ],"edges":[
+    {"from":"A","to":"B","weight":4,"highlight":true},
+    {"from":"A","to":"C","weight":2,"highlight":true},
+    {"from":"C","to":"B","weight":1},
+    {"from":"C","to":"D","weight":5},
+    {"from":"B","to":"D","weight":3},
+    {"from":"B","to":"E","weight":2},
+    {"from":"D","to":"E","weight":1}
+  ]},
+  {"type":"label","id":"d","x":40,"y":70,"text":"dist:  A=0, B=4, C=2, D=∞, E=∞"},
+  {"type":"label","id":"pq","x":40,"y":95,"text":"PQ:  [(2, C), (4, B)]"}
+] }
+```
+
+```scene step=3 narration="Pop (2, C) — the smallest. Mark C visited. C is now the active node." code_lines=9-12
+{ "primitives": [
+  {"type":"graph","directed":true,"nodes":[
+    {"id":"A","x":150,"y":230,"label":"A","fill":"#86efac"},
+    {"id":"B","x":400,"y":110,"label":"B","fill":"#93c5fd"},
+    {"id":"C","x":400,"y":360,"label":"C","fill":"#86efac","highlight":true},
+    {"id":"D","x":620,"y":230,"label":"D"},
+    {"id":"E","x":720,"y":400,"label":"E"}
+  ],"edges":[
+    {"from":"A","to":"B","weight":4},
+    {"from":"A","to":"C","weight":2},
+    {"from":"C","to":"B","weight":1},
+    {"from":"C","to":"D","weight":5},
+    {"from":"B","to":"D","weight":3},
+    {"from":"B","to":"E","weight":2},
+    {"from":"D","to":"E","weight":1}
+  ]},
+  {"type":"label","id":"d","x":40,"y":70,"text":"dist:  A=0, B=4, C=2, D=∞, E=∞"},
+  {"type":"label","id":"pq","x":40,"y":95,"text":"PQ:  [(4, B)]"}
+] }
+```
+
+```scene step=4 narration="Relax C→B (weight 1): 2 + 1 = 3 < 4, so dist[B] improves to 3. Relax C→D (weight 5): 2 + 5 = 7 < ∞, dist[D] = 7." code_lines=13-16
+{ "primitives": [
+  {"type":"graph","directed":true,"nodes":[
+    {"id":"A","x":150,"y":230,"label":"A","fill":"#86efac"},
+    {"id":"B","x":400,"y":110,"label":"B","fill":"#93c5fd"},
+    {"id":"C","x":400,"y":360,"label":"C","fill":"#86efac"},
+    {"id":"D","x":620,"y":230,"label":"D","fill":"#93c5fd"},
+    {"id":"E","x":720,"y":400,"label":"E"}
+  ],"edges":[
+    {"from":"A","to":"B","weight":4},
+    {"from":"A","to":"C","weight":2},
+    {"from":"C","to":"B","weight":1,"highlight":true},
+    {"from":"C","to":"D","weight":5,"highlight":true},
+    {"from":"B","to":"D","weight":3},
+    {"from":"B","to":"E","weight":2},
+    {"from":"D","to":"E","weight":1}
+  ]},
+  {"type":"label","id":"d","x":40,"y":70,"text":"dist:  A=0, B=3 (↓), C=2, D=7, E=∞"},
+  {"type":"label","id":"pq","x":40,"y":95,"text":"PQ:  [(3, B), (4, B), (7, D)]  ← stale (4, B) will be skipped"}
+] }
+```
+
+```scene step=5 narration="Pop (3, B). Mark B visited. The stale (4, B) entry in the PQ will be skipped later because B is already in `visited`." code_lines=9-12
+{ "primitives": [
+  {"type":"graph","directed":true,"nodes":[
+    {"id":"A","x":150,"y":230,"label":"A","fill":"#86efac"},
+    {"id":"B","x":400,"y":110,"label":"B","fill":"#86efac","highlight":true},
+    {"id":"C","x":400,"y":360,"label":"C","fill":"#86efac"},
+    {"id":"D","x":620,"y":230,"label":"D","fill":"#93c5fd"},
+    {"id":"E","x":720,"y":400,"label":"E"}
+  ],"edges":[
+    {"from":"A","to":"B","weight":4},
+    {"from":"A","to":"C","weight":2},
+    {"from":"C","to":"B","weight":1},
+    {"from":"C","to":"D","weight":5},
+    {"from":"B","to":"D","weight":3},
+    {"from":"B","to":"E","weight":2},
+    {"from":"D","to":"E","weight":1}
+  ]},
+  {"type":"label","id":"d","x":40,"y":70,"text":"dist:  A=0, B=3, C=2, D=7, E=∞"},
+  {"type":"label","id":"pq","x":40,"y":95,"text":"PQ:  [(4, B), (7, D)]"}
+] }
+```
+
+```scene step=6 narration="Relax B→D: 3 + 3 = 6 < 7, so dist[D] improves to 6. Relax B→E: 3 + 2 = 5 < ∞, dist[E] = 5." code_lines=13-16
+{ "primitives": [
+  {"type":"graph","directed":true,"nodes":[
+    {"id":"A","x":150,"y":230,"label":"A","fill":"#86efac"},
+    {"id":"B","x":400,"y":110,"label":"B","fill":"#86efac"},
+    {"id":"C","x":400,"y":360,"label":"C","fill":"#86efac"},
+    {"id":"D","x":620,"y":230,"label":"D","fill":"#93c5fd"},
+    {"id":"E","x":720,"y":400,"label":"E","fill":"#93c5fd"}
+  ],"edges":[
+    {"from":"A","to":"B","weight":4},
+    {"from":"A","to":"C","weight":2},
+    {"from":"C","to":"B","weight":1},
+    {"from":"C","to":"D","weight":5},
+    {"from":"B","to":"D","weight":3,"highlight":true},
+    {"from":"B","to":"E","weight":2,"highlight":true},
+    {"from":"D","to":"E","weight":1}
+  ]},
+  {"type":"label","id":"d","x":40,"y":70,"text":"dist:  A=0, B=3, C=2, D=6 (↓), E=5"},
+  {"type":"label","id":"pq","x":40,"y":95,"text":"PQ:  [(4, B), (5, E), (6, D), (7, D)]"}
+] }
+```
+
+```scene step=7 narration="Pop (5, E). Mark E visited. E has no outgoing edges, so no relaxes." code_lines=9-12
+{ "primitives": [
+  {"type":"graph","directed":true,"nodes":[
+    {"id":"A","x":150,"y":230,"label":"A","fill":"#86efac"},
+    {"id":"B","x":400,"y":110,"label":"B","fill":"#86efac"},
+    {"id":"C","x":400,"y":360,"label":"C","fill":"#86efac"},
+    {"id":"D","x":620,"y":230,"label":"D","fill":"#93c5fd"},
+    {"id":"E","x":720,"y":400,"label":"E","fill":"#86efac","highlight":true}
+  ],"edges":[
+    {"from":"A","to":"B","weight":4},
+    {"from":"A","to":"C","weight":2},
+    {"from":"C","to":"B","weight":1},
+    {"from":"C","to":"D","weight":5},
+    {"from":"B","to":"D","weight":3},
+    {"from":"B","to":"E","weight":2},
+    {"from":"D","to":"E","weight":1}
+  ]},
+  {"type":"label","id":"d","x":40,"y":70,"text":"dist:  A=0, B=3, C=2, D=6, E=5"},
+  {"type":"label","id":"pq","x":40,"y":95,"text":"PQ:  [(6, D), (7, D)]"}
+] }
+```
+
+```scene step=8 narration="Pop (6, D). Mark D visited. Relax D→E: 6 + 1 = 7, but dist[E] = 5 already — no update. And E is visited anyway." code_lines=13-16
+{ "primitives": [
+  {"type":"graph","directed":true,"nodes":[
+    {"id":"A","x":150,"y":230,"label":"A","fill":"#86efac"},
+    {"id":"B","x":400,"y":110,"label":"B","fill":"#86efac"},
+    {"id":"C","x":400,"y":360,"label":"C","fill":"#86efac"},
+    {"id":"D","x":620,"y":230,"label":"D","fill":"#86efac","highlight":true},
+    {"id":"E","x":720,"y":400,"label":"E","fill":"#86efac"}
+  ],"edges":[
+    {"from":"A","to":"B","weight":4},
+    {"from":"A","to":"C","weight":2},
+    {"from":"C","to":"B","weight":1},
+    {"from":"C","to":"D","weight":5},
+    {"from":"B","to":"D","weight":3},
+    {"from":"B","to":"E","weight":2},
+    {"from":"D","to":"E","weight":1,"highlight":true}
+  ]},
+  {"type":"label","id":"d","x":40,"y":70,"text":"dist:  A=0, B=3, C=2, D=6, E=5"},
+  {"type":"label","id":"pq","x":40,"y":95,"text":"PQ:  [(7, D)]  (stale; skipped)"}
+] }
+```
+
+```scene step=9 narration="Pop (7, D) — stale because D is already visited. Continue the loop. PQ empty. Done." code_lines=8-10
+{ "primitives": [
+  {"type":"graph","directed":true,"nodes":[
+    {"id":"A","x":150,"y":230,"label":"A","fill":"#86efac"},
+    {"id":"B","x":400,"y":110,"label":"B","fill":"#86efac"},
+    {"id":"C","x":400,"y":360,"label":"C","fill":"#86efac"},
+    {"id":"D","x":620,"y":230,"label":"D","fill":"#86efac"},
+    {"id":"E","x":720,"y":400,"label":"E","fill":"#86efac"}
+  ],"edges":[
+    {"from":"A","to":"B","weight":4},
+    {"from":"A","to":"C","weight":2},
+    {"from":"C","to":"B","weight":1,"highlight":true},
+    {"from":"C","to":"D","weight":5},
+    {"from":"B","to":"D","weight":3,"highlight":true},
+    {"from":"B","to":"E","weight":2,"highlight":true},
+    {"from":"D","to":"E","weight":1}
+  ]},
+  {"type":"label","id":"d","x":40,"y":70,"text":"Final:  A=0, B=3, C=2, D=6, E=5"},
+  {"type":"label","id":"tree","x":40,"y":95,"text":"Shortest-path tree: A→C→B→D, A→C→B→E (highlighted)"}
+] }
+```
+
+## Quiz
+
+?? Why does Dijkstra require non-negative edge weights?
+>> The algorithm commits $d[u]$ as final the moment $u$ is popped from the PQ, relying on the fact that no subsequent path can improve it. With negative weights, a later detour through a negative edge could reduce $d[u]$ — Bellman-Ford handles that case but at $O(VE)$ cost.
+
+?? In step 4, we pushed a second `(3, B)` entry even though `(4, B)` was already in the PQ. Why not update the existing entry?
+>> Python's `heapq` doesn't support efficient key decrease. Instead we push a new entry; the old stale one becomes harmless because the `if u in visited: continue` check skips any second pop of an already-visited node. This is called "lazy deletion" and keeps the code simple without asymptotic impact.
