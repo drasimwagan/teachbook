@@ -89,6 +89,8 @@ export function parseTbk(source: string): ParseResult {
             narration: meta.narration ?? "",
             scene,
             codeLines: parseCodeLines(meta.code_lines),
+            sourceLine: c.position?.start.line,
+            sourceEndLine: c.position?.end.line,
           });
         } catch (e) {
           errors.push(

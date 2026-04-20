@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import ConceptPane from "./components/ConceptPane";
@@ -87,6 +87,22 @@ function App() {
 
   const totalSteps = notebook?.totalSteps ?? 0;
 
+  const activeSceneRange = useMemo<[number, number] | undefined>(() => {
+    if (!notebook) return undefined;
+    let remaining = currentStep;
+    for (const cell of notebook.cells) {
+      if (remaining < cell.steps.length) {
+        const step = cell.steps[remaining];
+        if (step?.sourceLine && step.sourceEndLine) {
+          return [step.sourceLine, step.sourceEndLine];
+        }
+        return undefined;
+      }
+      remaining -= cell.steps.length;
+    }
+    return undefined;
+  }, [notebook, currentStep]);
+
   return (
     <div className="flex h-screen flex-col bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
       <header className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-4 py-2">
@@ -119,7 +135,12 @@ function App() {
       </header>
 
       <main className="grid flex-1 grid-cols-[1fr_1fr_360px] overflow-hidden">
-        <ConceptPane source={source} onSourceChange={setSource} errors={parseErrors} />
+        <ConceptPane
+          source={source}
+          onSourceChange={setSource}
+          errors={parseErrors}
+          activeSceneRange={activeSceneRange}
+        />
         <VisualizationPane notebook={notebook} currentStep={currentStep} />
         <ChatPane notebook={notebook} />
       </main>

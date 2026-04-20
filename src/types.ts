@@ -77,6 +77,12 @@ export type Step = {
    * Undefined means no code highlight for this step.
    */
   codeLines?: [number, number];
+  /**
+   * 1-indexed inclusive source-file line range of the scene fence block.
+   * Internal (not serialized). Used to cross-highlight the authoring editor.
+   */
+  sourceLine?: number;
+  sourceEndLine?: number;
 };
 
 export type Cell = {

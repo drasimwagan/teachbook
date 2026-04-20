@@ -8,21 +8,32 @@ author: Teachbook starter
 # Projectile Motion
 
 A ball launched at angle θ with initial speed v₀ follows a parabolic trajectory
-under gravity. The position at time t is:
+under gravity. We can treat horizontal and vertical motion independently because
+gravity only acts vertically.
 
-- x(t) = v₀ · cos(θ) · t
-- y(t) = v₀ · sin(θ) · t − ½ · g · t²
+Here we launch a ball at **θ = 30°** with **v₀ = 20 m/s**, g = 9.8 m/s².
 
-Here we launch a ball at **θ = 30°** with **v₀ = 20 m/s**, giving:
+```text
+1. Decompose initial velocity into components
+     vₓ = v₀ · cos(θ) = 20 · cos(30°) = 17.32 m/s
+     vᵧ = v₀ · sin(θ) = 20 · sin(30°) = 10.00 m/s
 
-- vₓ = 17.32 m/s
-- vᵧ = 10 m/s
-- Time of flight ≈ 2.04 s
-- Range ≈ 35.3 m, max height ≈ 5.1 m
+2. Apply kinematic equations at time t
+     x(t) = vₓ · t
+     y(t) = vᵧ · t − ½ · g · t²
+
+3. At the peak, vertical velocity is zero
+     vᵧ − g·t_peak = 0    ⇒    t_peak = vᵧ / g ≈ 1.02 s
+
+4. Total flight time (ball returns to y = 0)
+     t_flight = 2 · vᵧ / g ≈ 2.04 s
+
+5. Evaluate the trajectory at successive timesteps.
+```
 
 ## Stepping through the trajectory
 
-```scene step=0 narration="t = 0: ball at origin, initial velocity at 30°."
+```scene step=0 narration="t = 0: ball at origin, initial velocity decomposes into vₓ = 17.32 and vᵧ = 10 m/s." code_lines=2-3
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"shape","shape":"circle","x":0,"y":0,"radius":6,"fill":"#ef4444"},
@@ -31,7 +42,7 @@ Here we launch a ball at **θ = 30°** with **v₀ = 20 m/s**, giving:
 ] }
 ```
 
-```scene step=1 narration="t = 0.4 s: ball is rising; horizontal velocity unchanged."
+```scene step=1 narration="t = 0.4 s: apply x(t) and y(t). The ball is rising." code_lines=6-7
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"plot","points":[[0,0],[6.93,3.22]]},
@@ -40,7 +51,7 @@ Here we launch a ball at **θ = 30°** with **v₀ = 20 m/s**, giving:
 ] }
 ```
 
-```scene step=2 narration="t = 0.8 s: near peak; vertical velocity decreasing."
+```scene step=2 narration="t = 0.8 s: approaching the peak. Vertical velocity has decreased to 10 − 9.8·0.8 = 2.16 m/s." code_lines=6-7
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86]]},
@@ -49,30 +60,31 @@ Here we launch a ball at **θ = 30°** with **v₀ = 20 m/s**, giving:
 ] }
 ```
 
-```scene step=3 narration="t = 1.2 s: just past peak — vertical velocity has flipped sign."
+```scene step=3 narration="t = 1.02 s: peak. Vertical velocity = 0, horizontal velocity unchanged." code_lines=9
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
-  {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[20.78,4.94]]},
-  {"type":"shape","shape":"circle","x":20.78,"y":4.94,"radius":6,"fill":"#ef4444"},
-  {"type":"label","x":18,"y":7,"text":"t = 1.2 s"}
+  {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[17.67,5.10]]},
+  {"type":"shape","shape":"circle","x":17.67,"y":5.10,"radius":6,"fill":"#ef4444"},
+  {"type":"arrow","from":[17.67,5.10],"to":[22.67,5.10],"label":"vₓ"},
+  {"type":"label","x":18,"y":7,"text":"peak — t ≈ 1.02 s"}
 ] }
 ```
 
-```scene step=4 narration="t = 1.6 s: falling back down."
+```scene step=4 narration="t = 1.6 s: falling back down; y decreases as the t² term dominates." code_lines=6-7
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
-  {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[20.78,4.94],[27.71,3.46]]},
+  {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[17.67,5.10],[27.71,3.46]]},
   {"type":"shape","shape":"circle","x":27.71,"y":3.46,"radius":6,"fill":"#ef4444"},
   {"type":"label","x":18,"y":7,"text":"t = 1.6 s"}
 ] }
 ```
 
-```scene step=5 narration="t ≈ 2.0 s: ball nearly at ground; range ≈ 35 m."
+```scene step=5 narration="t ≈ 2.04 s: ball lands. Total flight time = 2·vᵧ/g." code_lines=12
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
-  {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[20.78,4.94],[27.71,3.46],[34.64,0.4]]},
-  {"type":"shape","shape":"circle","x":34.64,"y":0.4,"radius":6,"fill":"#ef4444"},
-  {"type":"label","x":18,"y":7,"text":"t = 2.0 s"}
+  {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[17.67,5.10],[27.71,3.46],[34.64,0]]},
+  {"type":"shape","shape":"circle","x":34.64,"y":0,"radius":6,"fill":"#ef4444"},
+  {"type":"label","x":18,"y":7,"text":"landed at x ≈ 35.3 m"}
 ] }
 ```
 
