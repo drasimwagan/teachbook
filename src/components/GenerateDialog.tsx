@@ -15,6 +15,7 @@ export default function GenerateDialog({ open, onClose, onGenerated }: Props) {
   const [preview, setPreview] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLPreElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -30,6 +31,21 @@ export default function GenerateDialog({ open, onClose, onGenerated }: Props) {
     }
   }, [preview]);
 
+  const cleanup = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+  };
+
+  useEffect(() => {
+    if (!open) cleanup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const handleClose = () => {
+    cleanup();
+    onClose();
+  };
+
   async function submit() {
     const q = request.trim();
     if (!q || busy) return;
@@ -37,32 +53,45 @@ export default function GenerateDialog({ open, onClose, onGenerated }: Props) {
     setError(null);
     setPreview("");
 
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     const userPrompt =
       `Generate a Teachbook notebook for this request:\n\n${q}\n\n` +
       `Remember: respond with ONLY the raw .tbk file contents starting with ---. ` +
       `No prose before, no code fences around it.`;
 
     try {
-      await claudePromptStream(userPrompt, TBK_FORMAT_GUIDE, {
-        onChunk: (chunk) => {
-          setPreview((cur) => cur + chunk);
+      await claudePromptStream(
+        userPrompt,
+        TBK_FORMAT_GUIDE,
+        {
+          onChunk: (chunk) => setPreview((cur) => cur + chunk),
+          onDone: (full) => {
+            if (ac.signal.aborted) return;
+            const cleaned = stripOuterFence(full);
+            onGenerated(cleaned);
+            setRequest("");
+            setPreview("");
+            onClose();
+          },
+          onError: (msg) => setError(msg),
         },
-        onDone: (full) => {
-          const cleaned = stripOuterFence(full);
-          onGenerated(cleaned);
-          setRequest("");
-          setPreview("");
-          onClose();
-        },
-        onError: (msg) => {
-          setError(msg);
-        },
-      });
-    } catch {
-      // error already set in onError
+        { signal: ac.signal },
+      );
+    } catch (e) {
+      if ((e as Error)?.name !== "AbortError") {
+        // error already set via onError
+      }
     } finally {
       setBusy(false);
+      abortRef.current = null;
     }
+  }
+
+  function cancel() {
+    abortRef.current?.abort();
+    setBusy(false);
   }
 
   if (!open) return null;
@@ -70,7 +99,7 @@ export default function GenerateDialog({ open, onClose, onGenerated }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={busy ? undefined : onClose}
+      onClick={busy ? undefined : handleClose}
     >
       <div
         className="w-[640px] max-w-[92vw] max-h-[85vh] flex flex-col rounded-lg bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 p-4 shadow-xl"
@@ -87,7 +116,7 @@ export default function GenerateDialog({ open, onClose, onGenerated }: Props) {
           onChange={(e) => setRequest(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
-            if (e.key === "Escape" && !busy) onClose();
+            if (e.key === "Escape" && !busy) handleClose();
           }}
           placeholder="e.g. Teach binary search on a sorted array of 8 numbers."
           rows={3}
@@ -121,13 +150,21 @@ export default function GenerateDialog({ open, onClose, onGenerated }: Props) {
             {busy ? "Claude is writing…" : "⌘/Ctrl + Enter to submit · Esc to cancel"}
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              disabled={busy}
-              className="rounded border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm disabled:opacity-50"
-            >
-              Cancel
-            </button>
+            {busy ? (
+              <button
+                onClick={cancel}
+                className="rounded border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-400"
+              >
+                Stop
+              </button>
+            ) : (
+              <button
+                onClick={handleClose}
+                className="rounded border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm"
+              >
+                Cancel
+              </button>
+            )}
             <button
               onClick={submit}
               disabled={busy || !request.trim()}

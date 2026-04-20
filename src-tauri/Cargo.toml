@@ -25,4 +25,5 @@ serde_json = "1"
 tauri-plugin-dialog = "2.7.0"
 tokio = { version = "1.52.1", features = ["io-util", "process", "rt", "rt-multi-thread"] }
 dirs = "6.0.0"
+libc = "0.2.185"
 

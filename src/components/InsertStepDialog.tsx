@@ -22,6 +22,7 @@ export default function InsertStepDialog({
   const [preview, setPreview] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLPreElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -29,6 +30,9 @@ export default function InsertStepDialog({
       setError(null);
       setPreview("");
       setTimeout(() => textareaRef.current?.focus(), 50);
+    } else {
+      abortRef.current?.abort();
+      abortRef.current = null;
     }
   }, [open]);
 
@@ -38,26 +42,42 @@ export default function InsertStepDialog({
     }
   }, [preview]);
 
+  const handleClose = () => {
+    abortRef.current?.abort();
+    onClose();
+  };
+
   async function submit() {
     const q = request.trim();
     if (!q || busy) return;
     setBusy(true);
     setError(null);
     setPreview("");
+    const ac = new AbortController();
+    abortRef.current = ac;
     try {
       const { newSource, newStepIndex } = await insertStepAfter({
         source,
         afterStepIndex,
         request: q,
         onChunk: (chunk) => setPreview((cur) => cur + chunk),
+        signal: ac.signal,
       });
+      if (ac.signal.aborted) return;
       onInserted(newSource, newStepIndex);
       onClose();
     } catch (e) {
+      if ((e as Error)?.name === "AbortError") return;
       setError(String(e instanceof Error ? e.message : e));
     } finally {
       setBusy(false);
+      abortRef.current = null;
     }
+  }
+
+  function cancel() {
+    abortRef.current?.abort();
+    setBusy(false);
   }
 
   if (!open) return null;
@@ -65,7 +85,7 @@ export default function InsertStepDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={busy ? undefined : onClose}
+      onClick={busy ? undefined : handleClose}
     >
       <div
         className="w-[560px] max-w-[92vw] max-h-[85vh] flex flex-col rounded-lg bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 p-4 shadow-xl"
@@ -84,7 +104,7 @@ export default function InsertStepDialog({
           onChange={(e) => setRequest(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
-            if (e.key === "Escape" && !busy) onClose();
+            if (e.key === "Escape" && !busy) handleClose();
           }}
           placeholder="e.g. Show the array after the second pass — 1 has bubbled to index 0."
           rows={3}
@@ -118,13 +138,21 @@ export default function InsertStepDialog({
             {busy ? "Asking Claude…" : "⌘/Ctrl + Enter to submit · Esc to cancel"}
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              disabled={busy}
-              className="rounded border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm disabled:opacity-50"
-            >
-              Cancel
-            </button>
+            {busy ? (
+              <button
+                onClick={cancel}
+                className="rounded border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-400"
+              >
+                Stop
+              </button>
+            ) : (
+              <button
+                onClick={handleClose}
+                className="rounded border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm"
+              >
+                Cancel
+              </button>
+            )}
             <button
               onClick={submit}
               disabled={busy || !request.trim()}

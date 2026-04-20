@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Notebook } from "../types";
 import { chatSystemPrompt, claudePromptStream } from "../lib/claude";
 
@@ -18,6 +18,11 @@ export default function ChatPane({ notebook, source, currentStep }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
 
   async function send() {
     const text = input.trim();
@@ -29,6 +34,9 @@ export default function ChatPane({ notebook, source, currentStep }: Props) {
     const nextMessages: Message[] = [...messages, userMsg, assistantMsg];
     setMessages(nextMessages);
     setBusy(true);
+
+    const ac = new AbortController();
+    abortRef.current = ac;
 
     const narration = (() => {
       if (!notebook) return undefined;
@@ -53,59 +61,79 @@ export default function ChatPane({ notebook, source, currentStep }: Props) {
       .map((m) =>
         m.role === "user" ? `Student: ${m.content}` : `Tutor: ${m.content}`,
       )
-      .slice(0, -1) // exclude the empty assistant placeholder
+      .slice(0, -1)
       .join("\n\n");
 
     try {
-      await claudePromptStream(history, system, {
-        onChunk: (chunk) => {
-          setMessages((cur) => {
-            const copy = cur.slice();
-            const last = copy[copy.length - 1];
-            if (last?.role === "assistant" && last.streaming) {
-              copy[copy.length - 1] = {
-                ...last,
-                content: last.content + chunk,
-              };
-            }
-            return copy;
-          });
+      await claudePromptStream(
+        history,
+        system,
+        {
+          onChunk: (chunk) => {
+            setMessages((cur) => {
+              const copy = cur.slice();
+              const last = copy[copy.length - 1];
+              if (last?.role === "assistant" && last.streaming) {
+                copy[copy.length - 1] = {
+                  ...last,
+                  content: last.content + chunk,
+                };
+              }
+              return copy;
+            });
+          },
+          onDone: (full) => {
+            setMessages((cur) => {
+              const copy = cur.slice();
+              const last = copy[copy.length - 1];
+              if (last?.role === "assistant" && last.streaming) {
+                copy[copy.length - 1] = {
+                  role: "assistant",
+                  content: full || last.content,
+                  streaming: false,
+                };
+              }
+              return copy;
+            });
+          },
+          onError: (msg) => {
+            setMessages((cur) => {
+              const copy = cur.slice();
+              if (
+                copy.length > 0 &&
+                copy[copy.length - 1].role === "assistant" &&
+                copy[copy.length - 1].content === ""
+              ) {
+                copy.pop();
+              }
+              copy.push({ role: "error", content: msg });
+              return copy;
+            });
+          },
         },
-        onDone: (full) => {
-          setMessages((cur) => {
-            const copy = cur.slice();
-            const last = copy[copy.length - 1];
-            if (last?.role === "assistant" && last.streaming) {
-              copy[copy.length - 1] = {
-                role: "assistant",
-                content: full || last.content,
-                streaming: false,
-              };
-            }
-            return copy;
-          });
-        },
-        onError: (msg) => {
-          setMessages((cur) => {
-            const copy = cur.slice();
-            // Drop empty assistant placeholder if nothing arrived
-            if (
-              copy.length > 0 &&
-              copy[copy.length - 1].role === "assistant" &&
-              copy[copy.length - 1].content === ""
-            ) {
-              copy.pop();
-            }
-            copy.push({ role: "error", content: msg });
-            return copy;
-          });
-        },
-      });
-    } catch {
-      // onError already handled UI
+        { signal: ac.signal },
+      );
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") {
+        // Keep whatever chunks arrived; just stop marking as streaming.
+        setMessages((cur) => {
+          const copy = cur.slice();
+          const last = copy[copy.length - 1];
+          if (last?.role === "assistant" && last.streaming) {
+            copy[copy.length - 1] = { ...last, streaming: false };
+          }
+          return copy;
+        });
+      }
+      // else: onError already handled UI
     } finally {
       setBusy(false);
+      abortRef.current = null;
     }
+  }
+
+  function cancel() {
+    abortRef.current?.abort();
   }
 
   return (
@@ -148,13 +176,22 @@ export default function ChatPane({ notebook, source, currentStep }: Props) {
           disabled={busy}
           className="flex-1 rounded border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm disabled:opacity-50"
         />
-        <button
-          onClick={send}
-          disabled={busy || !input.trim()}
-          className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          Send
-        </button>
+        {busy ? (
+          <button
+            onClick={cancel}
+            className="rounded border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-400"
+          >
+            Stop
+          </button>
+        ) : (
+          <button
+            onClick={send}
+            disabled={!input.trim()}
+            className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            Send
+          </button>
+        )}
       </div>
     </section>
   );

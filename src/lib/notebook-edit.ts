@@ -32,6 +32,7 @@ export type InsertStepInput = {
   request: string;
   /** Called with raw chunks as they stream in (for live preview). */
   onChunk?: (chunk: string) => void;
+  signal?: AbortSignal;
 };
 
 export type InsertStepResult = {
@@ -55,6 +56,7 @@ export async function insertStepAfter({
   afterStepIndex,
   request,
   onChunk,
+  signal,
 }: InsertStepInput): Promise<InsertStepResult> {
   const { notebook } = parseTbk(source);
   const anchor = locateStep(notebook, afterStepIndex);
@@ -68,11 +70,16 @@ export async function insertStepAfter({
   const system = `You are editing a Teachbook .tbk notebook. Return ONLY the new scene block — a single markdown code fence starting with \`\`\`scene and ending with \`\`\`. No prose before or after. No outer markdown fences. The scene must use primitives and coordinate conventions consistent with the existing notebook.`;
 
   const raw = await new Promise<string>((resolve, reject) => {
-    claudePromptStream(prompt, system, {
-      onChunk: (c) => onChunk?.(c),
-      onDone: (full) => resolve(full),
-      onError: (msg) => reject(new Error(msg)),
-    }).catch(reject);
+    claudePromptStream(
+      prompt,
+      system,
+      {
+        onChunk: (c) => onChunk?.(c),
+        onDone: (full) => resolve(full),
+        onError: (msg) => reject(new Error(msg)),
+      },
+      { signal },
+    ).catch(reject);
   });
 
   const sceneBlock = extractSceneBlock(raw);

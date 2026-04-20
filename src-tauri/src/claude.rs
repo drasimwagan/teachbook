@@ -1,6 +1,27 @@
+use std::collections::HashMap;
 use std::process::{Command, Stdio};
-use tauri::{AppHandle, Emitter};
+use std::sync::Mutex;
+use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::io::AsyncReadExt;
+
+/// Per-request process registry. Holds the OS pid of the `claude` child so
+/// `claude_cancel` can signal it. Entries are inserted when a stream starts
+/// and removed when it finishes (success, error, or cancel).
+#[derive(Default)]
+pub struct ClaudeState {
+    pids: Mutex<HashMap<String, u32>>,
+}
+
+impl ClaudeState {
+    fn insert(&self, id: &str, pid: u32) {
+        if let Ok(mut m) = self.pids.lock() {
+            m.insert(id.to_string(), pid);
+        }
+    }
+    fn remove(&self, id: &str) -> Option<u32> {
+        self.pids.lock().ok().and_then(|mut m| m.remove(id))
+    }
+}
 
 /// Resolve a usable path to the `claude` binary. Tauri apps on macOS launched
 /// from Finder don't inherit the user's shell PATH; try common install paths
@@ -61,7 +82,7 @@ pub async fn claude_prompt(
 /// Streaming variant of `claude_prompt`. Emits `claude-chunk-{request_id}`
 /// events as stdout bytes arrive, then `claude-done-{request_id}` with the
 /// full concatenated response, or `claude-error-{request_id}` with stderr on
-/// non-zero exit.
+/// non-zero exit. Register the child's pid so `claude_cancel` can abort it.
 #[tauri::command]
 pub async fn claude_prompt_stream(
     app: AppHandle,
@@ -83,6 +104,12 @@ pub async fn claude_prompt_stream(
         .map_err(|e| format!("Failed to launch '{bin}': {e}"))?;
     let stdout = child.stdout.take().ok_or("claude child has no stdout")?;
     let stderr = child.stderr.take().ok_or("claude child has no stderr")?;
+
+    // Register pid for cancel lookup.
+    let state: State<'_, ClaudeState> = app.state();
+    if let Some(pid) = child.id() {
+        state.insert(&request_id, pid);
+    }
 
     let chunk_event = format!("claude-chunk-{request_id}");
     let done_event = format!("claude-done-{request_id}");
@@ -115,12 +142,24 @@ pub async fn claude_prompt_stream(
         s
     });
 
-    let status = child
-        .wait()
-        .await
-        .map_err(|e| format!("wait failed: {e}"))?;
+    let status_result = child.wait().await;
+
+    // Always clear pid registration, whether we succeeded, errored, or were cancelled.
+    let cancelled = state.remove(&request_id).is_none();
+
+    let status = match status_result {
+        Ok(s) => s,
+        Err(e) => return Err(format!("wait failed: {e}")),
+    };
+
     let full = stdout_task.await.unwrap_or_default();
     let err = stderr_task.await.unwrap_or_default();
+
+    if cancelled {
+        // User-initiated abort. Don't emit error — just close the stream.
+        let _ = app.emit(&done_event, full.trim().to_string());
+        return Ok(());
+    }
 
     if !status.success() {
         let msg = if err.is_empty() {
@@ -133,6 +172,27 @@ pub async fn claude_prompt_stream(
     }
 
     let _ = app.emit(&done_event, full.trim().to_string());
+    Ok(())
+}
+
+/// Cancel an in-flight streaming request. Sends SIGTERM to the pid registered
+/// by `claude_prompt_stream`. No-op if the request already finished.
+#[tauri::command]
+pub fn claude_cancel(state: State<ClaudeState>, request_id: String) -> Result<(), String> {
+    let Some(pid) = state.remove(&request_id) else {
+        return Ok(());
+    };
+    #[cfg(unix)]
+    {
+        // SAFETY: passing a valid pid; SIGTERM is a well-defined signal.
+        unsafe { libc::kill(pid as i32, libc::SIGTERM) };
+    }
+    #[cfg(windows)]
+    {
+        // On Windows we can't SIGTERM; cancel becomes best-effort (the request
+        // will still finish in the background). Documented limitation for v1.
+        let _ = pid;
+    }
     Ok(())
 }
 

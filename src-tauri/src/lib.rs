@@ -5,7 +5,7 @@ mod library;
 use std::fs;
 use std::path::PathBuf;
 
-use claude::{claude_check, claude_prompt, claude_prompt_stream};
+use claude::{claude_cancel, claude_check, claude_prompt, claude_prompt_stream, ClaudeState};
 use examples::list_bundled_notebooks;
 use library::{list_user_notebooks, user_notebooks_path};
 
@@ -31,6 +31,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .manage(ClaudeState::default())
         .invoke_handler(tauri::generate_handler![
             load_notebook,
             save_notebook,
@@ -38,6 +39,7 @@ pub fn run() {
             claude_check,
             claude_prompt,
             claude_prompt_stream,
+            claude_cancel,
             list_bundled_notebooks,
             list_user_notebooks,
             user_notebooks_path

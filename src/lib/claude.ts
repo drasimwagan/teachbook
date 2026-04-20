@@ -22,14 +22,16 @@ export type StreamHandlers = {
 };
 
 /**
- * Streams a Claude response via Tauri events. Returns a promise that resolves
- * when the stream ends, plus a cancel function (currently a no-op — the child
- * process keeps running if you drop interest; wire Ctrl-C later if needed).
+ * Streams a Claude response via Tauri events. Pass an AbortSignal to cancel
+ * in-flight — we SIGTERM the claude subprocess on the Rust side, then the
+ * stream closes normally (handlers.onDone fires with whatever was collected
+ * so far).
  */
 export async function claudePromptStream(
   prompt: string,
   systemPrompt: string | undefined,
   handlers: StreamHandlers,
+  options?: { signal?: AbortSignal },
 ): Promise<void> {
   const requestId = crypto.randomUUID();
   const unlisteners: UnlistenFn[] = [];
@@ -38,7 +40,26 @@ export async function claudePromptStream(
     for (const u of unlisteners) u();
   };
 
+  const cancelOnBackend = () => {
+    invoke("claude_cancel", { requestId }).catch((e) => {
+      console.warn("claude_cancel failed:", e);
+    });
+  };
+
   return new Promise<void>(async (resolve, reject) => {
+    const signal = options?.signal;
+    if (signal?.aborted) {
+      // Already aborted before we started — never even spawn.
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+
+    const onAbort = () => {
+      cancelOnBackend();
+      // Don't stop/reject here; let the Rust side emit done_event naturally.
+    };
+    signal?.addEventListener("abort", onAbort);
+
     try {
       unlisteners.push(
         await listen<string>(`claude-chunk-${requestId}`, (ev) => {
@@ -49,13 +70,19 @@ export async function claudePromptStream(
         await listen<string>(`claude-done-${requestId}`, (ev) => {
           handlers.onDone(ev.payload);
           stop();
-          resolve();
+          signal?.removeEventListener("abort", onAbort);
+          if (signal?.aborted) {
+            reject(new DOMException("Aborted", "AbortError"));
+          } else {
+            resolve();
+          }
         }),
       );
       unlisteners.push(
         await listen<string>(`claude-error-${requestId}`, (ev) => {
           handlers.onError(ev.payload);
           stop();
+          signal?.removeEventListener("abort", onAbort);
           reject(new Error(ev.payload));
         }),
       );
@@ -67,6 +94,7 @@ export async function claudePromptStream(
       });
     } catch (e) {
       stop();
+      signal?.removeEventListener("abort", onAbort);
       handlers.onError(String(e));
       reject(e);
     }
