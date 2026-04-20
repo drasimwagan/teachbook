@@ -1,0 +1,82 @@
+---
+version: 0.1
+title: Projectile Motion
+subject: physics
+author: Teachbook starter
+---
+
+# Projectile Motion
+
+A ball launched at angle θ with initial speed v₀ follows a parabolic trajectory
+under gravity. The position at time t is:
+
+- x(t) = v₀ · cos(θ) · t
+- y(t) = v₀ · sin(θ) · t − ½ · g · t²
+
+Here we launch a ball at **θ = 30°** with **v₀ = 20 m/s**, giving:
+
+- vₓ = 17.32 m/s
+- vᵧ = 10 m/s
+- Time of flight ≈ 2.04 s
+- Range ≈ 35.3 m, max height ≈ 5.1 m
+
+## Stepping through the trajectory
+
+```scene step=0 narration="t = 0: ball at origin, initial velocity at 30°."
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
+  {"type":"shape","shape":"circle","x":0,"y":0,"radius":6,"fill":"#ef4444"},
+  {"type":"arrow","from":[0,0],"to":[5,2.89],"label":"v₀"},
+  {"type":"label","x":18,"y":7,"text":"θ = 30°, v₀ = 20 m/s"}
+] }
+```
+
+```scene step=1 narration="t = 0.4 s: ball is rising; horizontal velocity unchanged."
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
+  {"type":"plot","points":[[0,0],[6.93,3.22]]},
+  {"type":"shape","shape":"circle","x":6.93,"y":3.22,"radius":6,"fill":"#ef4444"},
+  {"type":"label","x":18,"y":7,"text":"t = 0.4 s"}
+] }
+```
+
+```scene step=2 narration="t = 0.8 s: near peak; vertical velocity decreasing."
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
+  {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86]]},
+  {"type":"shape","shape":"circle","x":13.86,"y":4.86,"radius":6,"fill":"#ef4444"},
+  {"type":"label","x":18,"y":7,"text":"t = 0.8 s"}
+] }
+```
+
+```scene step=3 narration="t = 1.2 s: just past peak — vertical velocity has flipped sign."
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
+  {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[20.78,4.94]]},
+  {"type":"shape","shape":"circle","x":20.78,"y":4.94,"radius":6,"fill":"#ef4444"},
+  {"type":"label","x":18,"y":7,"text":"t = 1.2 s"}
+] }
+```
+
+```scene step=4 narration="t = 1.6 s: falling back down."
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
+  {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[20.78,4.94],[27.71,3.46]]},
+  {"type":"shape","shape":"circle","x":27.71,"y":3.46,"radius":6,"fill":"#ef4444"},
+  {"type":"label","x":18,"y":7,"text":"t = 1.6 s"}
+] }
+```
+
+```scene step=5 narration="t ≈ 2.0 s: ball nearly at ground; range ≈ 35 m."
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
+  {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[20.78,4.94],[27.71,3.46],[34.64,0.4]]},
+  {"type":"shape","shape":"circle","x":34.64,"y":0.4,"radius":6,"fill":"#ef4444"},
+  {"type":"label","x":18,"y":7,"text":"t = 2.0 s"}
+] }
+```
+
+## Quiz
+
+?? At the peak of its trajectory, what is the ball's vertical velocity, and what is its horizontal velocity?
+>> Vertical velocity is 0 m/s (that defines the peak). Horizontal velocity is unchanged at v₀·cos(θ) ≈ 17.3 m/s — gravity only affects vertical motion.

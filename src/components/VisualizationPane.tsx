@@ -5,6 +5,7 @@ import SceneRenderer from "./SceneRenderer";
 type Props = {
   notebook: Notebook | null;
   currentStep: number;
+  narration: string;
 };
 
 function sceneForStep(nb: Notebook | null, step: number): Scene | null {
@@ -19,7 +20,7 @@ function sceneForStep(nb: Notebook | null, step: number): Scene | null {
   return null;
 }
 
-export default function VisualizationPane({ notebook, currentStep }: Props) {
+export default function VisualizationPane({ notebook, currentStep, narration }: Props) {
   const scene = sceneForStep(notebook, currentStep);
 
   return (
@@ -27,23 +28,30 @@ export default function VisualizationPane({ notebook, currentStep }: Props) {
       <div className="border-b border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-500">
         Visualization
       </div>
-      <div className="flex-1 overflow-auto bg-white dark:bg-zinc-950">
+      <div className="flex-1 overflow-auto bg-white dark:bg-zinc-950 flex items-center justify-center">
         <motion.div
           key={currentStep}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2 }}
-          className="h-full w-full"
+          className="h-full w-full flex items-center justify-center"
         >
           {scene ? (
             <SceneRenderer scene={scene} />
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-zinc-400">
-              No scene at this step.
+            <div className="text-sm text-zinc-400">
+              {notebook?.totalSteps === 0
+                ? "This notebook has no steps yet."
+                : "No scene at this step."}
             </div>
           )}
         </motion.div>
       </div>
+      {narration && (
+        <div className="border-t border-zinc-200 dark:border-zinc-800 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300">
+          {narration}
+        </div>
+      )}
     </section>
   );
 }
