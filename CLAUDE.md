@@ -4,10 +4,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Teachbook is in **early scaffolding** (pre-v0.1). The engine is not yet functional — the
-frontend renders an empty three-pane layout, the Rust backend has stub file-I/O commands,
-and there is no Claude integration wired up yet. Treat every file as open for
-redesign until v0.1 ships. Phased roadmap is in `docs/PLAN.md`.
+**Phase 1 complete. v0.1 release imminent.** The engine is stable. The app
+ships 14 bundled notebooks (113 scenes) across algorithms, physics, biology,
+electronics, chemistry, machine-learning, and quantum. Streaming chat /
+generate / insert-step all work end-to-end. Undo/redo, LaTeX, scene tweening,
+plugin system, and user library are all in place.
+
+Not yet started: Phase 2 (Pyodide — students run the code), Phase 3
+(bi-directional editing), Phase 4 (test mode). Current roadmap:
+[`docs/PLAN.md`](docs/PLAN.md).
+
+## Documentation map
+
+- [`README.md`](README.md) — front door, quickstart
+- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — how to use the app
+- [`docs/NOTEBOOK_FORMAT.md`](docs/NOTEBOOK_FORMAT.md) — `.tbk` reference
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — for code contributors
+- [`docs/PLUGIN_AUTHORING.md`](docs/PLUGIN_AUTHORING.md) — extending the engine
+- [`docs/PLAN.md`](docs/PLAN.md) — roadmap and design decisions
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — dev setup, PR flow
+
+When a user asks about anything the docs cover, point them at the right
+file. When the docs conflict with the code, trust the code and update the
+docs in the same PR.
 
 ## Commands
 
@@ -17,109 +36,120 @@ pnpm dev              # vite dev server only (browser, no Tauri shell)
 pnpm tauri dev        # full desktop app in dev mode — USE THIS
 pnpm build            # type-check + build frontend to dist/
 pnpm tauri build      # native installer in src-tauri/target/release/bundle/
+
+# Rust type-check
+cargo check --manifest-path src-tauri/Cargo.toml
+
+# Scene JSON validation across all notebooks
+node --input-type=module -e '
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+for (const f of readdirSync("notebooks").filter(n=>n.endsWith(".tbk"))) {
+  const s = readFileSync(join("notebooks", f), "utf8");
+  const re = /```scene[^\n]*\n([\s\S]*?)\n```/g;
+  let m, n = 0;
+  while ((m = re.exec(s))) { n++; try { JSON.parse(m[1]); } catch (e) { console.log(`${f} scene ${n}: ${e.message}`); } }
+  console.log(`${f}: ${n} scenes`);
+}'
 ```
 
-No test framework yet. No linter configured yet — prefer TypeScript's type checker
-(`pnpm build` runs `tsc`) as the gate.
+No test framework. Gates are: TypeScript type-check, `cargo check`, and the
+scene JSON validator.
 
-Rust code: `cd src-tauri && cargo check` / `cargo build`.
+## Architecture — quick reference
 
-## Architecture
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full picture.
+TL;DR:
 
-### The core abstraction
-Every subject reduces to **state → step → scene**. A notebook is a sequence of
-pre-computed steps; each step has a narration and a declarative scene description.
-The frontend plays steps like a debugger: Next/Prev/Reset buttons advance the
-`currentStep` state, which selects a scene to render. This is why the same engine
-teaches bubble sort and projectile motion.
+- Tauri shell with React/TS frontend + Rust backend
+- Frontend owns parsing, rendering, state, Claude prompting
+- Rust owns: file I/O, `claude` subprocess, bundled examples, user library
+- 8 core primitives (`grid`, `matrix`, `shape`, `arrow`, `label`, `axes`,
+  `plot`, `graph`) + 4 plugin primitives (`molecule`, `nn`, `heatmap`,
+  `bloch`)
+- `.tbk` files are Markdown with YAML frontmatter, `scene` fences
+  containing JSON, and optional quiz sections. Parser at
+  `src/lib/tbk-parser.ts`, serializer at `src/lib/tbk-serializer.ts`.
 
-### `.tbk` file format
-Markdown-primary. YAML frontmatter for metadata, prose as Markdown, Python/pseudocode
-in normal code fences, scene JSON in ` ```scene step=N narration="..." ` fences,
-quiz blocks using `??`/`>>` markers. See `notebooks/bubble-sort.tbk` for the
-canonical example. Single file, git-diffable, renders in any Markdown viewer.
+## Core abstraction
 
-A parser (to be written — `src/lib/tbk-parser.ts`) converts a `.tbk` file to the
-`Notebook` TypeScript type in `src/types.ts`. A serializer goes the other way. Keep
-them symmetric: parse(serialize(nb)) === nb for round-trip safety.
+Every subject reduces to **state → step → scene**. A notebook is a sequence
+of pre-computed steps; each step carries a scene snapshot. The renderer is
+subject-agnostic. This is why the same engine teaches bubble sort, the
+Bloch sphere, BFS, projectile motion, and methane combustion.
 
-### Scene primitives (the extension point)
-Visual domain-generality lives in `src/components/SceneRenderer.tsx`. The
-core primitives cover ~80% of step-by-step teaching:
+## Plugin system
 
-- `grid` — 1D array (positionable since round 2)
-- `matrix` — 2D table (DP, Punnett squares, confusion matrices)
-- `shape` / `arrow` / `label` — basic SVG primitives with optional `id` for tweening
-- `axes` / `plot` — coordinate systems and line/scatter plots
-- `graph` — weighted directed/undirected graphs with node+edge highlighting
+Plugins live under `src/plugins/<category>/<name>.tsx` and statically
+register in `src/plugins/index.ts`. The scene renderer falls through to the
+plugin registry for any primitive type it doesn't recognize. Every
+registered plugin's `schemaDoc` is auto-appended to `TBK_FORMAT_GUIDE` in
+`src/lib/prompts.ts` — so Claude learns plugin shapes at prompt-build time
+without any manual prompt updates.
 
-Add a new core primitive: extend `ScenePrimitive` in `src/types.ts` and add a
-branch in `SceneRenderer.tsx`.
+All plugins are checked into this repo. We deliberately don't support
+runtime loading of external plugins — zero untrusted code execution.
 
-### Plugin system (domain-specific primitives)
-Contributor-written plugins live under `src/plugins/<category>/<name>.tsx` and
-register at compile time via `src/plugins/index.ts`. See
-[`docs/PLUGIN_AUTHORING.md`](docs/PLUGIN_AUTHORING.md) for the full walkthrough.
+## Claude integration
 
-- First shipped plugin: `molecule` (chemistry) — see
-  `src/plugins/chemistry/molecule.tsx`.
-- The scene renderer falls through to the plugin registry for any unknown
-  primitive type (`SceneRenderer.tsx` default case).
-- Every registered plugin's `schemaDoc` is auto-appended to `TBK_FORMAT_GUIDE`
-  in `src/lib/prompts.ts`, so Generate and Add-step produce valid JSON for
-  plugin primitives without any extra prompt engineering.
-
-Security model: all plugins are checked into this repo. We deliberately don't
-support runtime loading of external plugins — zero untrusted code execution.
-
-### Frontend ↔ Rust boundary
-Rust (`src-tauri/src/lib.rs`) owns:
-- File I/O (`load_notebook`, `save_notebook`)
-- Spawning the Claude Code CLI as a subprocess (not implemented yet)
-- OS keychain for API keys (planned, not implemented)
-
-Everything else — parsing, rendering, state, stepping — lives in TypeScript. Keep
-the Rust surface small; treat it as a privileged-operations layer, not a backend.
-
-### Claude integration
-v0.1 uses the Claude Code CLI (`claude`) as a subprocess. Users already logged in
-via `claude login` get AI features with no extra setup. API-key mode (direct
-Anthropic SDK) is planned for v0.2.
+v0.1 uses the Claude Code CLI (`claude`) as a subprocess. Users already
+logged in via `claude login` get AI features with no extra setup.
 
 Rust commands (see `src-tauri/src/claude.rs`):
+
 - `claude_check()` — verifies the CLI is reachable
-- `claude_prompt(prompt, system_prompt?)` — one-shot text completion, returns stdout
-- `claude_generate_notebook(request)` — prepends the .tbk format guide and strips
-  any accidental outer code fences Claude adds; returns clean `.tbk` content
+- `claude_prompt(prompt, system_prompt?)` — blocking one-shot
+- `claude_prompt_stream(requestId, prompt, system_prompt?)` — streaming;
+  emits `claude-chunk-{id}`, `claude-done-{id}`, `claude-error-{id}` events
+- `claude_cancel(requestId)` — SIGTERMs the registered pid
 
-Binary resolution: `resolve_claude_binary()` tries `$TEACHBOOK_CLAUDE_BIN`, then
-`claude` in PATH, then `/opt/homebrew/bin/claude`, `/usr/local/bin/claude`, and
-`$HOME/.local/bin/claude`. macOS Finder-launched Tauri apps often miss the user's
-PATH, which is why fallbacks exist.
+Binary resolution: `resolve_claude_binary()` tries `$TEACHBOOK_CLAUDE_BIN`,
+then `claude` in PATH, then `/opt/homebrew/bin/claude`,
+`/usr/local/bin/claude`, and `$HOME/.local/bin/claude` — macOS
+Finder-launched Tauri apps often miss the user's PATH.
 
-Frontend helpers live in `src/lib/claude.ts`. `chatSystemPrompt()` builds the
-student-tutor system message with current notebook + step context; the chat pane
-assembles a conversational history and submits via `claude_prompt`.
+Frontend helpers live in `src/lib/claude.ts`. `claudePromptStream` accepts
+an `AbortSignal` that translates to `claude_cancel` when aborted.
 
-The `.tbk` format reference given to Claude lives in `TBK_FORMAT_GUIDE` in
-`claude.rs`. When the schema changes (new primitive, new scene meta field),
-update that constant and `docs/PLAN.md` in the same commit.
+Prompts live in `src/lib/prompts.ts` — that's the single source of truth.
+When the `.tbk` schema changes, update this file AND
+[`docs/NOTEBOOK_FORMAT.md`](docs/NOTEBOOK_FORMAT.md) AND at least one
+example notebook in the same commit.
 
 ## Conventions
 
-- Components are function components with explicit `Props` types. Avoid `React.FC`.
-- State lives in `App.tsx` for now; promote to Context / Zustand only when prop drilling hurts.
-- Tailwind for styling. Dark mode via `prefers-color-scheme` + `dark:` variants.
-- `tsconfig.json` has `strict: true` — no `any` without a `// eslint-disable-next-line` comment and a reason.
-- Rust errors cross the IPC boundary as `Result<T, String>`. Keep the string actionable.
+- Components are function components with explicit `Props` types. Avoid
+  `React.FC`.
+- State lives in `App.tsx`. No Redux or Context yet — prop drilling is
+  fine at this size.
+- Tailwind for styling. Dark mode via `prefers-color-scheme` + `dark:`
+  variants.
+- `tsconfig.json` has `strict: true`. Avoid `any`; when unavoidable, add a
+  `// eslint-disable-next-line` with a reason.
+- Rust errors cross the IPC boundary as `Result<T, String>`. Keep the
+  string actionable.
+- Commit style: see recent `git log`. Format: `<area>: <what>` subject +
+  body explaining *why*.
 
 ## What NOT to do
 
-- Don't reach for Electron, server backends, or accounts/auth. Teachbook is local-only,
-  self-hosted, BYO Claude subscription.
-- Don't hardcode subject-specific logic in the renderer. If you're writing
-  `if (subject === "physics")`, you're fighting the architecture — add a primitive instead.
-- Don't pre-compute scenes on the Rust side. Parsing and rendering are frontend concerns;
-  the Rust layer is for privileged operations only.
-- Don't expand the `.tbk` format silently. Changes to the schema must update
-  `docs/PLAN.md` and the example notebook together.
+- Don't reach for Electron, server backends, or accounts/auth. Teachbook
+  is local-only, self-hosted, BYO Claude subscription.
+- Don't hardcode subject-specific logic in the renderer. If you're
+  writing `if (subject === "physics")`, you're fighting the
+  architecture — add a primitive or plugin instead.
+- Don't pre-compute scenes on the Rust side. Parsing and rendering live
+  in the frontend.
+- Don't expand the `.tbk` schema silently. Schema changes require
+  coordinated updates to types, parser, serializer, `src/lib/prompts.ts`,
+  `docs/NOTEBOOK_FORMAT.md`, and at least one example notebook.
+- Don't load plugins at runtime. All plugins are checked in and bundled.
+
+## Quick facts for answering questions
+
+- 14 bundled notebooks, 113 total scenes, covering 7 subject areas
+- 4 plugins currently shipped: `molecule`, `nn`, `heatmap`, `bloch`
+- Main JS bundle: ~380 KB gzip (KaTeX + Markdown + CodeMirror langs lazy-loaded)
+- File format: Markdown + YAML frontmatter + `scene` fences + optional `## Quiz`
+- User notebooks: `~/Teachbook/notebooks/` (auto-created on first launch)
+- Claude integration: CLI subprocess, streaming via Tauri events, cancel via SIGTERM
