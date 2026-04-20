@@ -1,0 +1,58 @@
+---
+version: 0.1
+title: Bubble Sort
+subject: algorithms
+author: Teachbook starter
+---
+
+# What is sorting?
+
+Sorting arranges a list of items in order. **Bubble sort** is one of the simplest
+sorting algorithms: repeatedly walk the list, compare each pair of adjacent
+elements, and swap them if they are out of order. The largest unsorted element
+"bubbles up" to the end on each pass.
+
+```python
+def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        for j in range(n - 1 - i):
+            if arr[j] > arr[j + 1]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+    return arr
+```
+
+## Stepping through `[5, 2, 8, 1, 9]`
+
+```scene step=0 narration="Starting array. Nothing is sorted yet."
+{ "primitives": [ { "type": "grid", "values": [5, 2, 8, 1, 9] } ] }
+```
+
+```scene step=1 narration="Compare indices 0 and 1: 5 > 2, so swap."
+{ "primitives": [ { "type": "grid", "values": [5, 2, 8, 1, 9], "highlight": [0, 1] } ] }
+```
+
+```scene step=2 narration="After swap: [2, 5, 8, 1, 9]."
+{ "primitives": [ { "type": "grid", "values": [2, 5, 8, 1, 9], "highlight": [0, 1] } ] }
+```
+
+```scene step=3 narration="Compare indices 1 and 2: 5 < 8, no swap."
+{ "primitives": [ { "type": "grid", "values": [2, 5, 8, 1, 9], "highlight": [1, 2] } ] }
+```
+
+```scene step=4 narration="Compare indices 2 and 3: 8 > 1, swap."
+{ "primitives": [ { "type": "grid", "values": [2, 5, 8, 1, 9], "highlight": [2, 3] } ] }
+```
+
+```scene step=5 narration="After swap: [2, 5, 1, 8, 9]."
+{ "primitives": [ { "type": "grid", "values": [2, 5, 1, 8, 9], "highlight": [2, 3] } ] }
+```
+
+```scene step=6 narration="End of first pass. 9 has bubbled to the end."
+{ "primitives": [ { "type": "grid", "values": [2, 5, 1, 8, 9], "highlight": [4] } ] }
+```
+
+## Quiz
+
+?? What is the worst-case time complexity of bubble sort, and why?
+>> Student should identify O(n²) and explain that for each of n passes we do up to n comparisons, giving n × n total operations.
