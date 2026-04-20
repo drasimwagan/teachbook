@@ -7,6 +7,7 @@ import ChatPane from "./components/ChatPane";
 import StepControls from "./components/StepControls";
 import GenerateDialog from "./components/GenerateDialog";
 import ExamplesDialog from "./components/ExamplesDialog";
+import InsertStepDialog from "./components/InsertStepDialog";
 import { parseTbk } from "./lib/tbk-parser";
 import type { Notebook } from "./types";
 import "./App.css";
@@ -38,6 +39,7 @@ function App() {
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
+  const [insertAfter, setInsertAfter] = useState<number | null>(null);
 
   // Initial parse of welcome text
   useEffect(() => {
@@ -167,7 +169,11 @@ function App() {
           currentStep={currentStep}
           onStepSelect={setCurrentStep}
         />
-        <VisualizationPane notebook={notebook} currentStep={currentStep} />
+        <VisualizationPane
+          notebook={notebook}
+          currentStep={currentStep}
+          onInsertStep={(afterIndex) => setInsertAfter(afterIndex)}
+        />
         <ChatPane
           notebook={notebook}
           source={source}
@@ -190,6 +196,16 @@ function App() {
           setSource(tbk);
           setCurrentPath(null);
           setCurrentStep(0);
+        }}
+      />
+      <InsertStepDialog
+        open={insertAfter !== null}
+        afterStepIndex={insertAfter ?? 0}
+        source={source}
+        onClose={() => setInsertAfter(null)}
+        onInserted={(newSource, newStepIndex) => {
+          setSource(newSource);
+          setCurrentStep(newStepIndex);
         }}
       />
     </div>

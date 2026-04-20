@@ -6,6 +6,7 @@ import CodeStepView from "./CodeStepView";
 type Props = {
   notebook: Notebook | null;
   currentStep: number;
+  onInsertStep?: (afterStepIndex: number) => void;
 };
 
 type Located = { cell: Cell; step: Step } | null;
@@ -23,7 +24,11 @@ function locate(nb: Notebook | null, step: number): Located {
   return null;
 }
 
-export default function VisualizationPane({ notebook, currentStep }: Props) {
+export default function VisualizationPane({
+  notebook,
+  currentStep,
+  onInsertStep,
+}: Props) {
   const located = locate(notebook, currentStep);
   const scene: Scene | null = located?.step.scene ?? null;
   const narration = located?.step.narration ?? "";
@@ -80,16 +85,29 @@ export default function VisualizationPane({ notebook, currentStep }: Props) {
 
       {/* Narration */}
       <div className="border-t border-zinc-200 dark:border-zinc-800 px-4 py-2 shrink-0 bg-zinc-50 dark:bg-zinc-900">
-        <div className="flex items-baseline gap-2">
-          <span className="text-xs font-semibold text-amber-600 tabular-nums">
-            STEP {currentStep + 1}
-            {notebook ? ` / ${notebook.totalSteps}` : ""}
-          </span>
-          <span className="text-sm text-zinc-700 dark:text-zinc-300">
-            {narration || (
-              <span className="text-zinc-400 italic">no narration</span>
-            )}
-          </span>
+        <div className="flex items-start gap-2">
+          <div className="flex-1">
+            <div className="flex items-baseline gap-2">
+              <span className="text-xs font-semibold text-amber-600 tabular-nums">
+                STEP {currentStep + 1}
+                {notebook ? ` / ${notebook.totalSteps}` : ""}
+              </span>
+              <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                {narration || (
+                  <span className="text-zinc-400 italic">no narration</span>
+                )}
+              </span>
+            </div>
+          </div>
+          {located?.step.sourceEndLine && onInsertStep && (
+            <button
+              onClick={() => onInsertStep(currentStep)}
+              title="Insert a new step after this one (Claude)"
+              className="shrink-0 rounded border border-zinc-300 dark:border-zinc-700 px-2 py-0.5 text-xs hover:bg-blue-50 dark:hover:bg-blue-950 hover:border-blue-400 dark:hover:border-blue-700"
+            >
+              + Add step
+            </button>
+          )}
         </div>
       </div>
     </section>
