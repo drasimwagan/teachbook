@@ -53,27 +53,48 @@ function App() {
   );
 
   const handleUndo = useCallback(() => {
-    const prev = history.undo();
+    const prev = history.undo({
+      source,
+      currentStep,
+      currentPath,
+      label: "current state",
+    });
     if (!prev) return;
     setSource(prev.source);
     setCurrentStep(prev.currentStep);
     setCurrentPath(prev.currentPath);
-  }, [history]);
+  }, [history, source, currentStep, currentPath]);
 
-  // Global ⌘⇧Z / Ctrl+Shift+Z shortcut. Uses Shift+Z so we don't shadow
-  // CodeMirror's ⌘Z inside the editor.
+  const handleRedo = useCallback(() => {
+    const next = history.redo({
+      source,
+      currentStep,
+      currentPath,
+      label: "current state",
+    });
+    if (!next) return;
+    setSource(next.source);
+    setCurrentStep(next.currentStep);
+    setCurrentPath(next.currentPath);
+  }, [history, source, currentStep, currentPath]);
+
+  // Global shortcuts. ⌘⇧Z = undo (avoids CodeMirror's ⌘Z); ⌘Y = redo.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const isMac = navigator.platform.toLowerCase().includes("mac");
       const mod = isMac ? e.metaKey : e.ctrlKey;
-      if (mod && e.shiftKey && (e.key === "z" || e.key === "Z")) {
+      if (!mod) return;
+      if (e.shiftKey && (e.key === "z" || e.key === "Z")) {
         e.preventDefault();
         handleUndo();
+      } else if (!e.shiftKey && (e.key === "y" || e.key === "Y")) {
+        e.preventDefault();
+        handleRedo();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handleUndo]);
+  }, [handleUndo, handleRedo]);
 
   // Initial parse of welcome text
   useEffect(() => {
@@ -178,23 +199,42 @@ function App() {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleUndo}
-            disabled={history.depth === 0}
-            title={
-              history.lastLabel
-                ? `Undo: ${history.lastLabel} (⌘⇧Z)`
-                : "Nothing to undo"
-            }
-            className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-sm disabled:opacity-40"
-          >
-            ↶ Undo
-            {history.depth > 1 && (
-              <span className="ml-1 text-xs text-zinc-500 tabular-nums">
-                {history.depth}
-              </span>
-            )}
-          </button>
+          <div className="inline-flex rounded border border-zinc-300 dark:border-zinc-700 overflow-hidden">
+            <button
+              onClick={handleUndo}
+              disabled={history.undoDepth === 0}
+              title={
+                history.undoLabel
+                  ? `Undo: ${history.undoLabel} (⌘⇧Z)`
+                  : "Nothing to undo"
+              }
+              className="px-2 py-1 text-sm disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:hover:bg-transparent"
+            >
+              ↶
+              {history.undoDepth > 1 && (
+                <span className="ml-1 text-xs text-zinc-500 tabular-nums">
+                  {history.undoDepth}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={handleRedo}
+              disabled={history.redoDepth === 0}
+              title={
+                history.redoLabel
+                  ? `Redo: ${history.redoLabel} (⌘Y)`
+                  : "Nothing to redo"
+              }
+              className="border-l border-zinc-300 dark:border-zinc-700 px-2 py-1 text-sm disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:hover:bg-transparent"
+            >
+              ↷
+              {history.redoDepth > 1 && (
+                <span className="ml-1 text-xs text-zinc-500 tabular-nums">
+                  {history.redoDepth}
+                </span>
+              )}
+            </button>
+          </div>
           <button
             onClick={() => setExamplesOpen(true)}
             className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-sm"
