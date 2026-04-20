@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { claudeGenerateNotebook } from "../lib/claude";
+import { claudePromptStream } from "../lib/claude";
+import { TBK_FORMAT_GUIDE, stripOuterFence } from "../lib/prompts";
 
 type Props = {
   open: boolean;
@@ -11,27 +12,54 @@ export default function GenerateDialog({ open, onClose, onGenerated }: Props) {
   const [request, setRequest] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previewRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
     if (open) {
       setError(null);
+      setPreview("");
       setTimeout(() => textareaRef.current?.focus(), 50);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (previewRef.current) {
+      previewRef.current.scrollTop = previewRef.current.scrollHeight;
+    }
+  }, [preview]);
 
   async function submit() {
     const q = request.trim();
     if (!q || busy) return;
     setBusy(true);
     setError(null);
+    setPreview("");
+
+    const userPrompt =
+      `Generate a Teachbook notebook for this request:\n\n${q}\n\n` +
+      `Remember: respond with ONLY the raw .tbk file contents starting with ---. ` +
+      `No prose before, no code fences around it.`;
+
     try {
-      const tbk = await claudeGenerateNotebook(q);
-      onGenerated(tbk);
-      setRequest("");
-      onClose();
-    } catch (e) {
-      setError(String(e));
+      await claudePromptStream(userPrompt, TBK_FORMAT_GUIDE, {
+        onChunk: (chunk) => {
+          setPreview((cur) => cur + chunk);
+        },
+        onDone: (full) => {
+          const cleaned = stripOuterFence(full);
+          onGenerated(cleaned);
+          setRequest("");
+          setPreview("");
+          onClose();
+        },
+        onError: (msg) => {
+          setError(msg);
+        },
+      });
+    } catch {
+      // error already set in onError
     } finally {
       setBusy(false);
     }
@@ -45,12 +73,12 @@ export default function GenerateDialog({ open, onClose, onGenerated }: Props) {
       onClick={busy ? undefined : onClose}
     >
       <div
-        className="w-[560px] max-w-[90vw] rounded-lg bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 p-4 shadow-xl"
+        className="w-[640px] max-w-[92vw] max-h-[85vh] flex flex-col rounded-lg bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 p-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-base font-semibold mb-1">Generate a notebook</h2>
         <p className="text-xs text-zinc-500 mb-3">
-          Describe what you want to teach. Claude will produce a complete
+          Describe what you want to teach. Claude will stream a complete
           Teachbook notebook with stepped visualizations.
         </p>
         <textarea
@@ -62,18 +90,35 @@ export default function GenerateDialog({ open, onClose, onGenerated }: Props) {
             if (e.key === "Escape" && !busy) onClose();
           }}
           placeholder="e.g. Teach binary search on a sorted array of 8 numbers."
-          rows={4}
+          rows={3}
           disabled={busy}
-          className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-2 py-1 text-sm disabled:opacity-50 resize-none"
+          className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-2 py-1 text-sm disabled:opacity-50 resize-none shrink-0"
         />
+
+        {(busy || preview) && (
+          <div className="mt-3 flex-1 min-h-0 flex flex-col">
+            <div className="text-xs text-zinc-500 mb-1">
+              {busy ? "Streaming…" : "Preview"}
+            </div>
+            <pre
+              ref={previewRef}
+              className="flex-1 min-h-0 overflow-auto rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-xs font-mono p-2 whitespace-pre-wrap break-words"
+            >
+              {preview}
+              {busy && <span className="animate-pulse text-zinc-400">▍</span>}
+            </pre>
+          </div>
+        )}
+
         {error && (
-          <div className="mt-2 rounded bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 px-2 py-1 text-xs font-mono whitespace-pre-wrap">
+          <div className="mt-2 rounded bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 px-2 py-1 text-xs font-mono whitespace-pre-wrap max-h-32 overflow-auto shrink-0">
             {error}
           </div>
         )}
-        <div className="mt-3 flex items-center justify-between">
+
+        <div className="mt-3 flex items-center justify-between shrink-0">
           <div className="text-xs text-zinc-400">
-            {busy ? "Generating…" : "⌘/Ctrl + Enter to submit · Esc to cancel"}
+            {busy ? "Claude is writing…" : "⌘/Ctrl + Enter to submit · Esc to cancel"}
           </div>
           <div className="flex gap-2">
             <button

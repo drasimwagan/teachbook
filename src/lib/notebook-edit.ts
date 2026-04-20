@@ -1,8 +1,8 @@
-import { claudePrompt } from "./claude";
+import { claudePromptStream } from "./claude";
 import { parseTbk } from "./tbk-parser";
 import type { Notebook } from "../types";
 
-const SCENE_FENCE_RE = /^```scene\b[\s\S]*?\n```$/m;
+const SCENE_FENCE_RE = /```scene\b[\s\S]*?\n```/m;
 
 function extractSceneBlock(raw: string): string {
   const trimmed = raw.trim();
@@ -28,8 +28,10 @@ function extractSceneBlock(raw: string): string {
 
 export type InsertStepInput = {
   source: string;
-  afterStepIndex: number; // global step index
+  afterStepIndex: number;
   request: string;
+  /** Called with raw chunks as they stream in (for live preview). */
+  onChunk?: (chunk: string) => void;
 };
 
 export type InsertStepResult = {
@@ -48,15 +50,11 @@ function locateStep(nb: Notebook, globalIndex: number) {
   return null;
 }
 
-/**
- * Ask Claude to generate a new scene block that should come AFTER the step at
- * `afterStepIndex` in the given source. Returns the updated source and the
- * index of the newly inserted step.
- */
 export async function insertStepAfter({
   source,
   afterStepIndex,
   request,
+  onChunk,
 }: InsertStepInput): Promise<InsertStepResult> {
   const { notebook } = parseTbk(source);
   const anchor = locateStep(notebook, afterStepIndex);
@@ -69,12 +67,18 @@ export async function insertStepAfter({
   const prompt = buildInsertPrompt({ source, afterStepIndex, anchor, request });
   const system = `You are editing a Teachbook .tbk notebook. Return ONLY the new scene block — a single markdown code fence starting with \`\`\`scene and ending with \`\`\`. No prose before or after. No outer markdown fences. The scene must use primitives and coordinate conventions consistent with the existing notebook.`;
 
-  const raw = await claudePrompt(prompt, system);
+  const raw = await new Promise<string>((resolve, reject) => {
+    claudePromptStream(prompt, system, {
+      onChunk: (c) => onChunk?.(c),
+      onDone: (full) => resolve(full),
+      onError: (msg) => reject(new Error(msg)),
+    }).catch(reject);
+  });
+
   const sceneBlock = extractSceneBlock(raw);
 
   // Validate by parsing
-  const sampleSource = sceneBlock;
-  const fenceBody = /```scene[^\n]*\n([\s\S]*?)\n```/.exec(sampleSource);
+  const fenceBody = /```scene[^\n]*\n([\s\S]*?)\n```/.exec(sceneBlock);
   if (!fenceBody) {
     throw new Error("Generated scene block is malformed (no fence body).");
   }
@@ -89,12 +93,11 @@ export async function insertStepAfter({
 
   // Splice the scene block after the anchor's end line (1-indexed).
   const lines = source.split("\n");
-  const insertAt = anchor.sourceEndLine; // after this line in 1-indexed terms
+  const insertAt = anchor.sourceEndLine;
   const before = lines.slice(0, insertAt);
   const after = lines.slice(insertAt);
   const blockLines = sceneBlock.split("\n");
 
-  // Ensure exactly one blank line separator on either side.
   const needLeadingBlank = before.length > 0 && before[before.length - 1].trim() !== "";
   const needTrailingBlank = after.length > 0 && after[0].trim() !== "";
   const merged = [
@@ -107,8 +110,6 @@ export async function insertStepAfter({
 
   const newSource = merged.join("\n");
 
-  // Re-parse to find the new step's index. It should be afterStepIndex + 1, but
-  // re-locate robustly in case ordering surprised us.
   const reparsed = parseTbk(newSource);
   const newIndex = Math.min(afterStepIndex + 1, reparsed.notebook.totalSteps - 1);
 
@@ -142,6 +143,6 @@ function buildInsertPrompt(args: {
     "{\"primitives\": [ ... ]}",
     "```",
     "",
-    `Use step=${afterStepIndex + 2} as the step number. Include code_lines if the notebook's cell has a code/solution block and the new step corresponds to specific lines. Reuse the same primitive types as the anchor scene so the visualization style stays consistent.`,
+    `Use step=${afterStepIndex + 2} as the step number. Include code_lines if the notebook's cell has a code/solution block and the new step corresponds to specific lines. Reuse the same primitive types as the anchor scene so the visualization style stays consistent. If any primitive in the anchor has an "id" (e.g. a moving ball), include the SAME id on the same primitive in your new step so it tweens smoothly.`,
   ].join("\n");
 }

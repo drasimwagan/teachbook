@@ -11,10 +11,6 @@ export async function claudePrompt(
   });
 }
 
-export async function claudeGenerateNotebook(request: string): Promise<string> {
-  return invoke<string>("claude_generate_notebook", { request });
-}
-
 export async function claudeCheck(): Promise<string> {
   return invoke<string>("claude_check");
 }
