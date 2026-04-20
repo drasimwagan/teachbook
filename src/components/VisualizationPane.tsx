@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import type { Cell, Notebook, Scene, Step } from "../types";
 import SceneRenderer from "./SceneRenderer";
 import CodeStepView from "./CodeStepView";
@@ -51,13 +50,7 @@ export default function VisualizationPane({
             (hasCode ? "basis-1/2 flex-1" : "flex-1")
           }
         >
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-            className="h-full w-full flex items-center justify-center p-2"
-          >
+          <div className="h-full w-full flex items-center justify-center p-2">
             {scene ? (
               <SceneRenderer scene={scene} />
             ) : (
@@ -67,7 +60,7 @@ export default function VisualizationPane({
                   : "No scene at this step."}
               </div>
             )}
-          </motion.div>
+          </div>
         </div>
 
         {/* Code step — takes bottom half when present */}

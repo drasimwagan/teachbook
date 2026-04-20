@@ -21,11 +21,19 @@ You generate Teachbook notebooks (.tbk files). A .tbk file is Markdown with:
 
 Scene primitive types (pick those that fit; all have type=<name>):
 - grid: { type: "grid", values: [...], highlight?: [indices] }
-- shape: { type: "shape", shape: "circle"|"rect"|"polygon", x, y, radius?, width?, height?, fill?, stroke? }
-- arrow: { type: "arrow", from: [x, y], to: [x, y], label? }
-- label: { type: "label", x, y, text, latex? }
+- shape: { type: "shape", id?, shape: "circle"|"rect"|"polygon", x, y, radius?, width?, height?, fill?, stroke? }
+- arrow: { type: "arrow", id?, from: [x, y], to: [x, y], label? }
+- label: { type: "label", id?, x, y, text, latex? }
   // When latex is true, `text` is a LaTeX expression (e.g. "v_y = \\frac{1}{2} g t^2").
   // Prefer LaTeX for any equation. Escape backslashes in JSON: \\frac, \\theta, \\approx.
+
+IMPORTANT — animation via stable ids:
+  When the same logical object appears across multiple steps at different
+  positions (a moving ball, a pointer advancing along an array, a rotating
+  arrow), give it the SAME id in every step. Framer Motion then tweens its
+  position smoothly between steps. Example: the ball in projectile motion has
+  id: "ball" in all six scenes, so it arcs through the trajectory.
+  Omit id when the primitive appears only once or isn't the "same thing".
 - axes: { type: "axes", xMin, xMax, yMin, yMax }  // include with physics/plots
 - plot: { type: "plot", points: [[x,y],...], label? }
 - graph: { type: "graph", nodes: [{id, x, y, label?}], edges: [[a,b],...] }

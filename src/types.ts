@@ -7,6 +7,8 @@ export type GridPrimitive = {
 export type ShapePrimitive = {
   type: "shape";
   shape: "circle" | "rect" | "polygon";
+  /** Stable id across steps → enables position tweening. */
+  id?: string;
   x: number;
   y: number;
   width?: number;
@@ -18,6 +20,7 @@ export type ShapePrimitive = {
 
 export type ArrowPrimitive = {
   type: "arrow";
+  id?: string;
   from: [number, number];
   to: [number, number];
   label?: string;
@@ -25,6 +28,7 @@ export type ArrowPrimitive = {
 
 export type LabelPrimitive = {
   type: "label";
+  id?: string;
   x: number;
   y: number;
   text: string;

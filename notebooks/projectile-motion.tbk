@@ -45,7 +45,7 @@ $$
 ```scene step=0 narration="t = 0: ball at origin, initial velocity decomposes into vx = 17.32 and vy = 10 m/s." code_lines=2-3
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
-  {"type":"shape","shape":"circle","x":0,"y":0,"radius":6,"fill":"#ef4444"},
+  {"type":"shape","id":"ball","shape":"circle","x":0,"y":0,"radius":6,"fill":"#ef4444"},
   {"type":"arrow","from":[0,0],"to":[5,2.89],"label":"v₀"},
   {"type":"label","x":14,"y":7.3,"text":"v_0 = 20\\ \\text{m/s},\\ \\theta = 30°","latex":true}
 ] }
@@ -55,7 +55,7 @@ $$
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"plot","points":[[0,0],[6.93,3.22]]},
-  {"type":"shape","shape":"circle","x":6.93,"y":3.22,"radius":6,"fill":"#ef4444"},
+  {"type":"shape","id":"ball","shape":"circle","x":6.93,"y":3.22,"radius":6,"fill":"#ef4444"},
   {"type":"label","x":14,"y":7.3,"text":"t = 0.4\\ \\text{s}","latex":true}
 ] }
 ```
@@ -64,7 +64,7 @@ $$
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86]]},
-  {"type":"shape","shape":"circle","x":13.86,"y":4.86,"radius":6,"fill":"#ef4444"},
+  {"type":"shape","id":"ball","shape":"circle","x":13.86,"y":4.86,"radius":6,"fill":"#ef4444"},
   {"type":"label","x":14,"y":7.3,"text":"v_y = v_0 \\sin\\theta - g t = 2.16\\ \\text{m/s}","latex":true}
 ] }
 ```
@@ -73,7 +73,7 @@ $$
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[17.67,5.10]]},
-  {"type":"shape","shape":"circle","x":17.67,"y":5.10,"radius":6,"fill":"#ef4444"},
+  {"type":"shape","id":"ball","shape":"circle","x":17.67,"y":5.10,"radius":6,"fill":"#ef4444"},
   {"type":"arrow","from":[17.67,5.10],"to":[22.67,5.10],"label":"vx"},
   {"type":"label","x":14,"y":7.3,"text":"t_{\\text{peak}} = v_y / g \\approx 1.02\\ \\text{s}","latex":true}
 ] }
@@ -83,7 +83,7 @@ $$
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[17.67,5.10],[27.71,3.46]]},
-  {"type":"shape","shape":"circle","x":27.71,"y":3.46,"radius":6,"fill":"#ef4444"},
+  {"type":"shape","id":"ball","shape":"circle","x":27.71,"y":3.46,"radius":6,"fill":"#ef4444"},
   {"type":"label","x":14,"y":7.3,"text":"y(t) = v_y t - \\tfrac{1}{2} g t^2","latex":true}
 ] }
 ```
@@ -92,7 +92,7 @@ $$
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[17.67,5.10],[27.71,3.46],[34.64,0]]},
-  {"type":"shape","shape":"circle","x":34.64,"y":0,"radius":6,"fill":"#ef4444"},
+  {"type":"shape","id":"ball","shape":"circle","x":34.64,"y":0,"radius":6,"fill":"#ef4444"},
   {"type":"label","x":14,"y":7.3,"text":"t_{\\text{flight}} = 2 v_y / g \\approx 2.04\\ \\text{s}","latex":true}
 ] }
 ```

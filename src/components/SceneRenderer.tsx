@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { motion } from "framer-motion";
 import katex from "katex";
 import type {
   ArrowPrimitive,
@@ -16,6 +17,8 @@ type Props = { scene: Scene };
 
 const VIEW_W = 800;
 const VIEW_H = 500;
+
+const TWEEN = { type: "tween", duration: 0.35, ease: "easeOut" } as const;
 
 export default function SceneRenderer({ scene }: Props) {
   const axes = scene.primitives.find((p): p is AxesPrimitive => p.type === "axes");
@@ -38,10 +41,15 @@ export default function SceneRenderer({ scene }: Props) {
         </marker>
       </defs>
       {scene.primitives.map((p, i) => (
-        <Primitive key={i} p={p} axes={axes} />
+        <Primitive key={primitiveKey(p, i)} p={p} axes={axes} />
       ))}
     </svg>
   );
+}
+
+function primitiveKey(p: ScenePrimitive, fallbackIndex: number): string {
+  if ("id" in p && p.id) return `${p.type}:${p.id}`;
+  return `${p.type}:${fallbackIndex}`;
 }
 
 type AxisCtx = AxesPrimitive | undefined;
@@ -73,7 +81,6 @@ function Primitive({ p, axes }: { p: ScenePrimitive; axes: AxisCtx }) {
     case "graph":
       return <Graph p={p} />;
     default:
-      // plugin or unknown — render a placeholder tag
       return (
         <text x={10} y={20} fontSize={12} fill="#b91c1c">
           unknown primitive: {String(p.type)}
@@ -90,13 +97,14 @@ function Grid({ p }: { p: GridPrimitive }) {
     <g>
       {p.values.map((v, i) => (
         <g key={i} transform={`translate(${startX + i * cell}, ${VIEW_H / 2 - 30})`}>
-          <rect
+          <motion.rect
             width={cell - 4}
             height={cell - 4}
             rx={4}
-            fill={highlight.has(i) ? "#fde68a" : "#e5e7eb"}
             stroke="#52525b"
             strokeWidth={1}
+            animate={{ fill: highlight.has(i) ? "#fde68a" : "#e5e7eb" }}
+            transition={TWEEN}
           />
           <text
             x={(cell - 4) / 2}
@@ -127,19 +135,34 @@ function Shape({ p, axes }: { p: ShapePrimitive; axes: AxisCtx }) {
   const fill = p.fill ?? "#60a5fa";
   const stroke = p.stroke ?? "#1e3a8a";
   if (p.shape === "circle") {
-    return <circle cx={x} cy={y} r={p.radius ?? 20} fill={fill} stroke={stroke} />;
+    return (
+      <motion.circle
+        animate={{ cx: x, cy: y }}
+        transition={TWEEN}
+        r={p.radius ?? 20}
+        fill={fill}
+        stroke={stroke}
+      />
+    );
   }
   if (p.shape === "rect") {
     const w = p.width ?? 40;
     const h = p.height ?? 40;
     return (
-      <rect x={x - w / 2} y={y - h / 2} width={w} height={h} fill={fill} stroke={stroke} />
+      <motion.rect
+        animate={{ x: x - w / 2, y: y - h / 2 }}
+        transition={TWEEN}
+        width={w}
+        height={h}
+        fill={fill}
+        stroke={stroke}
+      />
     );
   }
-  // polygon fallback: treat as regular pentagon
+  // polygon fallback: regular pentagon (no tween on the vertex positions)
   const r = p.radius ?? 25;
   const pts = Array.from({ length: 5 }, (_, i) => {
-    const a = (-Math.PI / 2) + (i * 2 * Math.PI) / 5;
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
     return `${x + r * Math.cos(a)},${y + r * Math.sin(a)}`;
   }).join(" ");
   return <polygon points={pts} fill={fill} stroke={stroke} />;
@@ -150,19 +173,22 @@ function Arrow({ p, axes }: { p: ArrowPrimitive; axes: AxisCtx }) {
   const [x2, y2] = project(axes, p.to[0], p.to[1]);
   return (
     <g className="text-zinc-700 dark:text-zinc-200">
-      <line
-        x1={x1}
-        y1={y1}
-        x2={x2}
-        y2={y2}
+      <motion.line
+        animate={{ x1, y1, x2, y2 }}
+        transition={TWEEN}
         stroke="currentColor"
         strokeWidth={2}
         markerEnd="url(#arrowhead)"
       />
       {p.label && (
-        <text x={(x1 + x2) / 2 + 6} y={(y1 + y2) / 2 - 6} fontSize={12} fill="currentColor">
+        <motion.text
+          animate={{ x: (x1 + x2) / 2 + 6, y: (y1 + y2) / 2 - 6 }}
+          transition={TWEEN}
+          fontSize={12}
+          fill="currentColor"
+        >
           {p.label}
-        </text>
+        </motion.text>
       )}
     </g>
   );
@@ -185,9 +211,9 @@ function Label({ p, axes }: { p: LabelPrimitive; axes: AxisCtx }) {
 
   if (p.latex && html) {
     return (
-      <foreignObject
-        x={x - 4}
-        y={y - 18}
+      <motion.foreignObject
+        animate={{ x: x - 4, y: y - 18 }}
+        transition={TWEEN}
         width={260}
         height={36}
         style={{ overflow: "visible" }}
@@ -196,14 +222,20 @@ function Label({ p, axes }: { p: LabelPrimitive; axes: AxisCtx }) {
           style={{ fontSize: "15px", color: "currentColor", whiteSpace: "nowrap" }}
           dangerouslySetInnerHTML={{ __html: html }}
         />
-      </foreignObject>
+      </motion.foreignObject>
     );
   }
 
   return (
-    <text x={x} y={y} fontSize={14} fill="currentColor" className="text-zinc-800 dark:text-zinc-100">
+    <motion.text
+      animate={{ x, y }}
+      transition={TWEEN}
+      fontSize={14}
+      fill="currentColor"
+      className="text-zinc-800 dark:text-zinc-100"
+    >
       {p.text}
-    </text>
+    </motion.text>
   );
 }
 
@@ -214,24 +246,8 @@ function Axes({ p }: { p: AxesPrimitive }) {
   const [xRightPx] = project(p, p.xMax, 0);
   return (
     <g className="text-zinc-400">
-      {/* x axis */}
-      <line
-        x1={pad}
-        y1={oy}
-        x2={VIEW_W - pad}
-        y2={oy}
-        stroke="currentColor"
-        strokeWidth={1}
-      />
-      {/* y axis */}
-      <line
-        x1={ox}
-        y1={VIEW_H - pad}
-        x2={ox}
-        y2={pad}
-        stroke="currentColor"
-        strokeWidth={1}
-      />
+      <line x1={pad} y1={oy} x2={VIEW_W - pad} y2={oy} stroke="currentColor" strokeWidth={1} />
+      <line x1={ox} y1={VIEW_H - pad} x2={ox} y2={pad} stroke="currentColor" strokeWidth={1} />
       <text x={xRightPx + 4} y={oy + 4} fontSize={11} fill="currentColor">
         x
       </text>
@@ -252,7 +268,13 @@ function Plot({ p, axes }: { p: PlotPrimitive; axes: AxisCtx }) {
     .join(" ");
   return (
     <g>
-      <path d={d} fill="none" stroke="#2563eb" strokeWidth={2} />
+      <motion.path
+        animate={{ d }}
+        transition={TWEEN}
+        fill="none"
+        stroke="#2563eb"
+        strokeWidth={2}
+      />
       {p.points.map(([x, y], i) => {
         const [px, py] = project(axes, x, y);
         return <circle key={i} cx={px} cy={py} r={3} fill="#2563eb" />;
@@ -273,7 +295,6 @@ function Plot({ p, axes }: { p: PlotPrimitive; axes: AxisCtx }) {
 
 function Graph({ p }: { p: GraphPrimitive }) {
   const byId = new Map(p.nodes.map((n) => [n.id, n]));
-  // Assume node coords are in viewBox space directly for simplicity
   return (
     <g>
       {p.edges.map(([a, b], i) => {
