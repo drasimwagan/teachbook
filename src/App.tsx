@@ -148,6 +148,9 @@ function App() {
           onSourceChange={setSource}
           errors={parseErrors}
           activeSceneRange={activeSceneRange}
+          notebook={notebook}
+          currentStep={currentStep}
+          onStepSelect={setCurrentStep}
         />
         <VisualizationPane notebook={notebook} currentStep={currentStep} />
         <ChatPane
