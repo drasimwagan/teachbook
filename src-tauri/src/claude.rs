@@ -1,4 +1,6 @@
-use std::process::Command;
+use std::process::{Command, Stdio};
+use tauri::{AppHandle, Emitter};
+use tokio::io::AsyncReadExt;
 
 /// Concise format reference embedded in the system prompt when generating a
 /// new notebook. Kept short so the CLI doesn't hit argv length limits on
@@ -124,6 +126,87 @@ fn strip_outer_fence(s: &str) -> &str {
         }
     }
     trimmed
+}
+
+/// Streaming variant of `claude_prompt`. Emits `claude-chunk-{request_id}`
+/// events as stdout bytes arrive, then `claude-done-{request_id}` with the
+/// full concatenated response, or `claude-error-{request_id}` with stderr on
+/// non-zero exit. The command returns as soon as the child process is spawned;
+/// the frontend is responsible for listening to events.
+#[tauri::command]
+pub async fn claude_prompt_stream(
+    app: AppHandle,
+    request_id: String,
+    prompt: String,
+    system_prompt: Option<String>,
+) -> Result<(), String> {
+    let bin = resolve_claude_binary();
+    let mut cmd = tokio::process::Command::new(&bin);
+    cmd.arg("-p").arg(&prompt);
+    if let Some(sys) = system_prompt {
+        cmd.arg("--append-system-prompt").arg(sys);
+    }
+    cmd.stdout(Stdio::piped());
+    cmd.stderr(Stdio::piped());
+
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to launch '{bin}': {e}"))?;
+    let stdout = child.stdout.take().ok_or("claude child has no stdout")?;
+    let stderr = child.stderr.take().ok_or("claude child has no stderr")?;
+
+    let chunk_event = format!("claude-chunk-{request_id}");
+    let done_event = format!("claude-done-{request_id}");
+    let error_event = format!("claude-error-{request_id}");
+
+    // Drain stdout as chunks arrive.
+    let app_out = app.clone();
+    let chunk_ev = chunk_event.clone();
+    let stdout_task = tokio::spawn(async move {
+        let mut reader = stdout;
+        let mut buf = [0u8; 4096];
+        let mut collected = String::new();
+        loop {
+            match reader.read(&mut buf).await {
+                Ok(0) => break,
+                Ok(n) => {
+                    let text = String::from_utf8_lossy(&buf[..n]).to_string();
+                    collected.push_str(&text);
+                    let _ = app_out.emit(&chunk_ev, text);
+                }
+                Err(_) => break,
+            }
+        }
+        collected
+    });
+
+    // Drain stderr in parallel (for error reporting).
+    let stderr_task = tokio::spawn(async move {
+        let mut reader = stderr;
+        let mut s = String::new();
+        let _ = reader.read_to_string(&mut s).await;
+        s
+    });
+
+    let status = child
+        .wait()
+        .await
+        .map_err(|e| format!("wait failed: {e}"))?;
+    let full = stdout_task.await.unwrap_or_default();
+    let err = stderr_task.await.unwrap_or_default();
+
+    if !status.success() {
+        let msg = if err.is_empty() {
+            format!("claude exited with status {status}")
+        } else {
+            err
+        };
+        let _ = app.emit(&error_event, msg.clone());
+        return Err(msg);
+    }
+
+    let _ = app.emit(&done_event, full.trim().to_string());
+    Ok(())
 }
 
 #[tauri::command]

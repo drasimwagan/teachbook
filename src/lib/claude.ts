@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 export async function claudePrompt(
   prompt: string,
@@ -16,6 +17,64 @@ export async function claudeGenerateNotebook(request: string): Promise<string> {
 
 export async function claudeCheck(): Promise<string> {
   return invoke<string>("claude_check");
+}
+
+export type StreamHandlers = {
+  onChunk: (text: string) => void;
+  onDone: (full: string) => void;
+  onError: (message: string) => void;
+};
+
+/**
+ * Streams a Claude response via Tauri events. Returns a promise that resolves
+ * when the stream ends, plus a cancel function (currently a no-op — the child
+ * process keeps running if you drop interest; wire Ctrl-C later if needed).
+ */
+export async function claudePromptStream(
+  prompt: string,
+  systemPrompt: string | undefined,
+  handlers: StreamHandlers,
+): Promise<void> {
+  const requestId = crypto.randomUUID();
+  const unlisteners: UnlistenFn[] = [];
+
+  const stop = () => {
+    for (const u of unlisteners) u();
+  };
+
+  return new Promise<void>(async (resolve, reject) => {
+    try {
+      unlisteners.push(
+        await listen<string>(`claude-chunk-${requestId}`, (ev) => {
+          handlers.onChunk(ev.payload);
+        }),
+      );
+      unlisteners.push(
+        await listen<string>(`claude-done-${requestId}`, (ev) => {
+          handlers.onDone(ev.payload);
+          stop();
+          resolve();
+        }),
+      );
+      unlisteners.push(
+        await listen<string>(`claude-error-${requestId}`, (ev) => {
+          handlers.onError(ev.payload);
+          stop();
+          reject(new Error(ev.payload));
+        }),
+      );
+
+      await invoke("claude_prompt_stream", {
+        requestId,
+        prompt,
+        systemPrompt: systemPrompt ?? null,
+      });
+    } catch (e) {
+      stop();
+      handlers.onError(String(e));
+      reject(e);
+    }
+  });
 }
 
 export function chatSystemPrompt(opts: {

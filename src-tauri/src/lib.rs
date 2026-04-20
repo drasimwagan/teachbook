@@ -3,7 +3,7 @@ mod claude;
 use std::fs;
 use std::path::PathBuf;
 
-use claude::{claude_check, claude_generate_notebook, claude_prompt};
+use claude::{claude_check, claude_generate_notebook, claude_prompt, claude_prompt_stream};
 
 #[tauri::command]
 fn load_notebook(path: String) -> Result<String, String> {
@@ -33,6 +33,7 @@ pub fn run() {
             app_version,
             claude_check,
             claude_prompt,
+            claude_prompt_stream,
             claude_generate_notebook
         ])
         .run(tauri::generate_context!())

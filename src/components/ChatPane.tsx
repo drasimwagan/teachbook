@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Notebook } from "../types";
-import { chatSystemPrompt, claudePrompt } from "../lib/claude";
+import { chatSystemPrompt, claudePromptStream } from "../lib/claude";
 
 type Props = {
   notebook: Notebook | null;
@@ -11,6 +11,7 @@ type Props = {
 type Message = {
   role: "user" | "assistant" | "error";
   content: string;
+  streaming?: boolean;
 };
 
 export default function ChatPane({ notebook, source, currentStep }: Props) {
@@ -22,36 +23,86 @@ export default function ChatPane({ notebook, source, currentStep }: Props) {
     const text = input.trim();
     if (!text || busy) return;
     setInput("");
-    const nextMessages: Message[] = [...messages, { role: "user", content: text }];
+
+    const userMsg: Message = { role: "user", content: text };
+    const assistantMsg: Message = { role: "assistant", content: "", streaming: true };
+    const nextMessages: Message[] = [...messages, userMsg, assistantMsg];
     setMessages(nextMessages);
     setBusy(true);
-    try {
-      const narration = (() => {
-        if (!notebook) return undefined;
-        let remaining = currentStep;
-        for (const cell of notebook.cells) {
-          if (remaining < cell.steps.length) {
-            return cell.steps[remaining]?.narration;
-          }
-          remaining -= cell.steps.length;
+
+    const narration = (() => {
+      if (!notebook) return undefined;
+      let remaining = currentStep;
+      for (const cell of notebook.cells) {
+        if (remaining < cell.steps.length) {
+          return cell.steps[remaining]?.narration;
         }
-        return undefined;
-      })();
-      const system = chatSystemPrompt({
-        notebookSource: source,
-        currentStep,
-        narration,
+        remaining -= cell.steps.length;
+      }
+      return undefined;
+    })();
+
+    const system = chatSystemPrompt({
+      notebookSource: source,
+      currentStep,
+      narration,
+    });
+
+    const history = nextMessages
+      .filter((m) => m.role !== "error")
+      .map((m) =>
+        m.role === "user" ? `Student: ${m.content}` : `Tutor: ${m.content}`,
+      )
+      .slice(0, -1) // exclude the empty assistant placeholder
+      .join("\n\n");
+
+    try {
+      await claudePromptStream(history, system, {
+        onChunk: (chunk) => {
+          setMessages((cur) => {
+            const copy = cur.slice();
+            const last = copy[copy.length - 1];
+            if (last?.role === "assistant" && last.streaming) {
+              copy[copy.length - 1] = {
+                ...last,
+                content: last.content + chunk,
+              };
+            }
+            return copy;
+          });
+        },
+        onDone: (full) => {
+          setMessages((cur) => {
+            const copy = cur.slice();
+            const last = copy[copy.length - 1];
+            if (last?.role === "assistant" && last.streaming) {
+              copy[copy.length - 1] = {
+                role: "assistant",
+                content: full || last.content,
+                streaming: false,
+              };
+            }
+            return copy;
+          });
+        },
+        onError: (msg) => {
+          setMessages((cur) => {
+            const copy = cur.slice();
+            // Drop empty assistant placeholder if nothing arrived
+            if (
+              copy.length > 0 &&
+              copy[copy.length - 1].role === "assistant" &&
+              copy[copy.length - 1].content === ""
+            ) {
+              copy.pop();
+            }
+            copy.push({ role: "error", content: msg });
+            return copy;
+          });
+        },
       });
-      const history = nextMessages
-        .map((m) => (m.role === "user" ? `Student: ${m.content}` : `Tutor: ${m.content}`))
-        .join("\n\n");
-      const reply = await claudePrompt(history, system);
-      setMessages((cur) => [...cur, { role: "assistant", content: reply }]);
-    } catch (e) {
-      setMessages((cur) => [
-        ...cur,
-        { role: "error", content: String(e) },
-      ]);
+    } catch {
+      // onError already handled UI
     } finally {
       setBusy(false);
     }
@@ -80,12 +131,12 @@ export default function ChatPane({ notebook, source, currentStep }: Props) {
                     : "rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-1 whitespace-pre-wrap"
               }
             >
-              {m.content}
+              {m.content || (m.streaming ? <span className="text-zinc-400 italic">…</span> : null)}
+              {m.streaming && m.content && (
+                <span className="ml-0.5 inline-block animate-pulse text-zinc-400">▍</span>
+              )}
             </div>
           ))
-        )}
-        {busy && (
-          <div className="text-xs text-zinc-400 italic">Claude is thinking…</div>
         )}
       </div>
       <div className="border-t border-zinc-200 dark:border-zinc-800 p-2 flex gap-2 shrink-0">
@@ -93,7 +144,7 @@ export default function ChatPane({ notebook, source, currentStep }: Props) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
-          placeholder={busy ? "Waiting for reply…" : "Ask a question..."}
+          placeholder={busy ? "Streaming…" : "Ask a question..."}
           disabled={busy}
           className="flex-1 rounded border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm disabled:opacity-50"
         />
