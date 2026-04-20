@@ -1,0 +1,136 @@
+---
+version: 0.1
+title: Merge Sort
+subject: algorithms
+author: Teachbook starter
+---
+
+# Merge Sort
+
+Merge sort is a **divide-and-conquer** algorithm: split the array in half, sort
+each half recursively, then merge the two sorted halves. It runs in
+$O(n \log n)$ — for $n = 8$ elements, roughly $8 \cdot 3 = 24$ comparisons,
+versus bubble sort's $\sim n^2 = 64$.
+
+The key insight: merging two already-sorted halves of length $k$ takes only
+$2k$ comparisons.
+
+```python
+def merge_sort(arr):
+    if len(arr) <= 1:
+        return arr
+    mid = len(arr) // 2
+    left = merge_sort(arr[:mid])
+    right = merge_sort(arr[mid:])
+    return merge(left, right)
+
+def merge(left, right):
+    result = []
+    i = j = 0
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:
+            result.append(left[i]); i += 1
+        else:
+            result.append(right[j]); j += 1
+    result.extend(left[i:])
+    result.extend(right[j:])
+    return result
+```
+
+## Sorting `[5, 2, 8, 1, 9, 3, 7, 4]`
+
+We'll visualize the algorithm as bands in the array. Each color shows a
+currently-sorted sub-range. The merge happens in-place in the picture: after
+each merge, the two bands join into one.
+
+```scene step=0 narration="Initial array. Every element is its own 'sorted' band of size 1." code_lines=2-3
+{ "primitives": [
+  {"type":"grid","values":[5,2,8,1,9,3,7,4]},
+  {"type":"label","id":"stage","x":60,"y":80,"text":"Stage: 8 bands of size 1"}
+] }
+```
+
+```scene step=1 narration="Merge positions 0–1: compare 5 and 2. 2 is smaller." code_lines=15-16
+{ "primitives": [
+  {"type":"grid","values":[5,2,8,1,9,3,7,4],"highlight":[0,1]},
+  {"type":"label","id":"stage","x":60,"y":80,"text":"Merging [5] and [2]"}
+] }
+```
+
+```scene step=2 narration="After merge: band [2, 5]." code_lines=17-18
+{ "primitives": [
+  {"type":"grid","values":[2,5,8,1,9,3,7,4],"highlight":[0,1]},
+  {"type":"label","id":"stage","x":60,"y":80,"text":"Sorted: [2, 5]"}
+] }
+```
+
+```scene step=3 narration="Merge positions 2–3: compare 8 and 1. 1 is smaller." code_lines=15-20
+{ "primitives": [
+  {"type":"grid","values":[2,5,8,1,9,3,7,4],"highlight":[2,3]},
+  {"type":"label","id":"stage","x":60,"y":80,"text":"Merging [8] and [1]"}
+] }
+```
+
+```scene step=4 narration="After merge: band [1, 8]." code_lines=17-18
+{ "primitives": [
+  {"type":"grid","values":[2,5,1,8,9,3,7,4],"highlight":[2,3]},
+  {"type":"label","id":"stage","x":60,"y":80,"text":"Sorted: [2, 5] | [1, 8]"}
+] }
+```
+
+```scene step=5 narration="Merge positions 4–5 and 6–7 (batched). [9] with [3] → [3, 9], and [7] with [4] → [4, 7]." code_lines=15-20
+{ "primitives": [
+  {"type":"grid","values":[2,5,1,8,3,9,4,7],"highlight":[4,5,6,7]},
+  {"type":"label","id":"stage","x":60,"y":80,"text":"Sorted: [2, 5] | [1, 8] | [3, 9] | [4, 7]"}
+] }
+```
+
+```scene step=6 narration="Now merge the two bands of size 2 on the left: [2, 5] with [1, 8]. Pointers i=0, j=0." code_lines=15-16
+{ "primitives": [
+  {"type":"grid","values":[2,5,1,8,3,9,4,7],"highlight":[0,1,2,3]},
+  {"type":"label","id":"stage","x":60,"y":80,"text":"Compare 2 vs 1 → take 1"}
+] }
+```
+
+```scene step=7 narration="After merging the two size-2 bands into one size-4 band: [1, 2, 5, 8]." code_lines=23-24
+{ "primitives": [
+  {"type":"grid","values":[1,2,5,8,3,9,4,7],"highlight":[0,1,2,3]},
+  {"type":"label","id":"stage","x":60,"y":80,"text":"Sorted: [1, 2, 5, 8] | [3, 9] | [4, 7]"}
+] }
+```
+
+```scene step=8 narration="Merge the two bands on the right: [3, 9] with [4, 7] → [3, 4, 7, 9]." code_lines=15-24
+{ "primitives": [
+  {"type":"grid","values":[1,2,5,8,3,4,7,9],"highlight":[4,5,6,7]},
+  {"type":"label","id":"stage","x":60,"y":80,"text":"Sorted: [1, 2, 5, 8] | [3, 4, 7, 9]"}
+] }
+```
+
+```scene step=9 narration="Final merge: combine the two size-4 bands. Compare 1 vs 3 → take 1." code_lines=15-16
+{ "primitives": [
+  {"type":"grid","values":[1,2,5,8,3,4,7,9],"highlight":[0,4]},
+  {"type":"label","id":"stage","x":60,"y":80,"text":"i=0, j=0. Compare 1 vs 3"}
+] }
+```
+
+```scene step=10 narration="Then 2 vs 3 → take 2. Then 5 vs 3 → take 3. Then 5 vs 4 → take 4." code_lines=17-18
+{ "primitives": [
+  {"type":"grid","values":[1,2,3,4,5,8,7,9],"highlight":[2,3]},
+  {"type":"label","id":"stage","x":60,"y":80,"text":"Halfway: result so far = [1, 2, 3, 4]"}
+] }
+```
+
+```scene step=11 narration="Continue: 5 vs 7 → 5, then 8 vs 7 → 7, then 8 vs 9 → 8, left exhausted, copy 9." code_lines=19-25
+{ "primitives": [
+  {"type":"grid","values":[1,2,3,4,5,7,8,9],"highlight":[0,1,2,3,4,5,6,7]},
+  {"type":"label","id":"stage","x":60,"y":80,"text":"Fully sorted! 11 comparisons total."}
+] }
+```
+
+## Quiz
+
+?? Why is merge sort $O(n \log n)$ but bubble sort $O(n^2)$?
+>> Merge sort reduces the problem size by halves ($\log n$ levels of recursion), and each level does $O(n)$ work merging. Bubble sort does $O(n)$ comparisons for each of $n$ passes, giving $n^2$.
+
+?? Merge sort uses extra space to hold the merged result. How much?
+>> $O(n)$ — the merge step allocates a buffer as large as the input slice it's merging. Unlike bubble sort or quicksort, merge sort is not in-place.

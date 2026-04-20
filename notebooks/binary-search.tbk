@@ -1,0 +1,92 @@
+---
+version: 0.1
+title: Binary Search
+subject: algorithms
+author: Teachbook starter
+---
+
+# Binary Search
+
+Binary search finds an element in a **sorted** array in $O(\log n)$ time. It
+maintains a search window `[lo, hi]` and halves it on every comparison by
+checking the midpoint.
+
+```python
+def binary_search(arr, target):
+    lo, hi = 0, len(arr) - 1
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return -1
+```
+
+## Searching for 47 in `[3, 11, 17, 29, 33, 47, 58, 62, 75, 80]`
+
+```scene step=0 narration="Initialize lo = 0, hi = 9. Window spans the whole array." code_lines=2
+{ "primitives": [
+  {"type":"grid","values":[3,11,17,29,33,47,58,62,75,80]},
+  {"type":"label","id":"info","x":80,"y":80,"text":"target = 47"},
+  {"type":"label","id":"state","x":80,"y":110,"text":"lo = 0, hi = 9"}
+] }
+```
+
+```scene step=1 narration="mid = (0 + 9) // 2 = 4. Check arr[4] = 33." code_lines=4
+{ "primitives": [
+  {"type":"grid","values":[3,11,17,29,33,47,58,62,75,80],"highlight":[4]},
+  {"type":"label","id":"info","x":80,"y":80,"text":"target = 47"},
+  {"type":"label","id":"state","x":80,"y":110,"text":"lo = 0, hi = 9, mid = 4, arr[mid] = 33"}
+] }
+```
+
+```scene step=2 narration="33 < 47, so the target must be to the right. Advance lo to mid + 1 = 5." code_lines=7-8
+{ "primitives": [
+  {"type":"grid","values":[3,11,17,29,33,47,58,62,75,80],"highlight":[5,6,7,8,9]},
+  {"type":"label","id":"info","x":80,"y":80,"text":"target = 47"},
+  {"type":"label","id":"state","x":80,"y":110,"text":"lo = 5, hi = 9  (eliminated indices 0–4)"}
+] }
+```
+
+```scene step=3 narration="mid = (5 + 9) // 2 = 7. Check arr[7] = 62." code_lines=4
+{ "primitives": [
+  {"type":"grid","values":[3,11,17,29,33,47,58,62,75,80],"highlight":[7]},
+  {"type":"label","id":"info","x":80,"y":80,"text":"target = 47"},
+  {"type":"label","id":"state","x":80,"y":110,"text":"lo = 5, hi = 9, mid = 7, arr[mid] = 62"}
+] }
+```
+
+```scene step=4 narration="62 > 47, so the target must be to the left. Retreat hi to mid - 1 = 6." code_lines=9-10
+{ "primitives": [
+  {"type":"grid","values":[3,11,17,29,33,47,58,62,75,80],"highlight":[5,6]},
+  {"type":"label","id":"info","x":80,"y":80,"text":"target = 47"},
+  {"type":"label","id":"state","x":80,"y":110,"text":"lo = 5, hi = 6  (eliminated indices 7–9)"}
+] }
+```
+
+```scene step=5 narration="mid = (5 + 6) // 2 = 5. Check arr[5] = 47." code_lines=4
+{ "primitives": [
+  {"type":"grid","values":[3,11,17,29,33,47,58,62,75,80],"highlight":[5]},
+  {"type":"label","id":"info","x":80,"y":80,"text":"target = 47"},
+  {"type":"label","id":"state","x":80,"y":110,"text":"lo = 5, hi = 6, mid = 5, arr[mid] = 47"}
+] }
+```
+
+```scene step=6 narration="arr[mid] equals target. Return 5." code_lines=5-6
+{ "primitives": [
+  {"type":"grid","values":[3,11,17,29,33,47,58,62,75,80],"highlight":[5]},
+  {"type":"label","id":"info","x":80,"y":80,"text":"Found! return 5"},
+  {"type":"label","id":"state","x":80,"y":110,"text":"Comparisons made: 3  (≈ log₂(10))"}
+] }
+```
+
+## Quiz
+
+?? Why does binary search require the array to be sorted?
+>> The algorithm uses the comparison `arr[mid] < target` to decide which half to discard. That decision only works if elements to the left of `mid` are all ≤ `arr[mid]` and elements to the right are all ≥ — i.e. the array is sorted. On an unsorted array the elimination step could discard the target.
+
+?? What is the time complexity of binary search on an array of size n, and why?
+>> $O(\log n)$. Each comparison halves the remaining search window, so the window shrinks from $n$ to $n/2$ to $n/4$ … to 1 in at most $\lceil \log_2 n \rceil$ steps.

@@ -1,0 +1,140 @@
+---
+version: 0.1
+title: Simple Harmonic Motion
+subject: physics
+author: Teachbook starter
+---
+
+# Simple Harmonic Motion
+
+A mass attached to a spring oscillates back and forth — the spring exerts a
+**restoring force** proportional to displacement ($F = -kx$). Solving Newton's
+second law gives sinusoidal motion:
+
+$$
+x(t) = A \cos(\omega t), \qquad \omega = \sqrt{k/m}
+$$
+
+For $A = 3$ m (amplitude), $k = 4$ N/m, $m = 1$ kg: $\omega = 2$ rad/s,
+period $T = \pi$ s ≈ 3.14 s.
+
+```text
+1. Write Newton's second law: m · a = -k · x
+
+2. This is a second-order linear ODE:
+     x''(t) = -(k/m) · x(t)
+
+3. The solution is sinusoidal:
+     x(t) = A · cos(ω t + φ)
+   where ω = √(k/m) is the angular frequency.
+
+4. Velocity and acceleration follow by differentiation:
+     v(t) = -A ω · sin(ω t + φ)
+     a(t) = -A ω² · cos(ω t + φ) = -ω² x(t)
+
+5. At x = ±A (turning points): v = 0, |a| = maximum.
+   At x = 0 (equilibrium): |v| = maximum, a = 0.
+```
+
+## Stepping through one period
+
+```scene step=0 narration="t = 0: mass at x = +A = 3 m (max right). Velocity is zero." code_lines=5
+{ "primitives": [
+  {"type":"axes","xMin":-4,"xMax":4,"yMin":-2,"yMax":2},
+  {"type":"shape","id":"wall","shape":"rect","x":-3.8,"y":0,"width":12,"height":80,"fill":"#52525b"},
+  {"type":"shape","id":"mass","shape":"circle","x":3,"y":0,"radius":16,"fill":"#ef4444"},
+  {"type":"label","id":"pos","x":-3.5,"y":1.7,"text":"t = 0,\\ x = +A","latex":true},
+  {"type":"label","id":"eq","x":-3.5,"y":1.2,"text":"x(t) = 3\\cos(2t)","latex":true}
+] }
+```
+
+```scene step=1 narration="t = π/8 s: mass has moved left. Restoring force accelerates it toward equilibrium." code_lines=10
+{ "primitives": [
+  {"type":"axes","xMin":-4,"xMax":4,"yMin":-2,"yMax":2},
+  {"type":"shape","id":"wall","shape":"rect","x":-3.8,"y":0,"width":12,"height":80,"fill":"#52525b"},
+  {"type":"shape","id":"mass","shape":"circle","x":2.12,"y":0,"radius":16,"fill":"#ef4444"},
+  {"type":"label","id":"pos","x":-3.5,"y":1.7,"text":"t = \\pi/8,\\ x \\approx 2.12","latex":true},
+  {"type":"label","id":"eq","x":-3.5,"y":1.2,"text":"v < 0,\\ a < 0","latex":true}
+] }
+```
+
+```scene step=2 narration="t = π/4 s: passing through equilibrium. |v| is maximum, acceleration is zero." code_lines=13
+{ "primitives": [
+  {"type":"axes","xMin":-4,"xMax":4,"yMin":-2,"yMax":2},
+  {"type":"shape","id":"wall","shape":"rect","x":-3.8,"y":0,"width":12,"height":80,"fill":"#52525b"},
+  {"type":"shape","id":"mass","shape":"circle","x":0,"y":0,"radius":16,"fill":"#ef4444"},
+  {"type":"arrow","id":"v","from":[0,0],"to":[-1.5,0],"label":"v"},
+  {"type":"label","id":"pos","x":-3.5,"y":1.7,"text":"t = \\pi/4,\\ x = 0","latex":true},
+  {"type":"label","id":"eq","x":-3.5,"y":1.2,"text":"|v| = A\\omega = 6\\ \\text{m/s}","latex":true}
+] }
+```
+
+```scene step=3 narration="t = 3π/8 s: mass continues left, decelerating now." code_lines=10
+{ "primitives": [
+  {"type":"axes","xMin":-4,"xMax":4,"yMin":-2,"yMax":2},
+  {"type":"shape","id":"wall","shape":"rect","x":-3.8,"y":0,"width":12,"height":80,"fill":"#52525b"},
+  {"type":"shape","id":"mass","shape":"circle","x":-2.12,"y":0,"radius":16,"fill":"#ef4444"},
+  {"type":"label","id":"pos","x":-3.5,"y":1.7,"text":"t = 3\\pi/8,\\ x \\approx -2.12","latex":true},
+  {"type":"label","id":"eq","x":-3.5,"y":1.2,"text":"v < 0,\\ a > 0","latex":true}
+] }
+```
+
+```scene step=4 narration="t = π/2 s: turning point at x = -A. Velocity = 0. Acceleration maximum (rightward)." code_lines=13
+{ "primitives": [
+  {"type":"axes","xMin":-4,"xMax":4,"yMin":-2,"yMax":2},
+  {"type":"shape","id":"wall","shape":"rect","x":-3.8,"y":0,"width":12,"height":80,"fill":"#52525b"},
+  {"type":"shape","id":"mass","shape":"circle","x":-3,"y":0,"radius":16,"fill":"#ef4444"},
+  {"type":"arrow","id":"v","from":[-3,0.5],"to":[-2,0.5],"label":"a"},
+  {"type":"label","id":"pos","x":-3.5,"y":1.7,"text":"t = \\pi/2,\\ x = -A","latex":true},
+  {"type":"label","id":"eq","x":-3.5,"y":1.2,"text":"v = 0,\\ a = +A\\omega^2","latex":true}
+] }
+```
+
+```scene step=5 narration="t = 5π/8 s: mass swinging back right, accelerating." code_lines=10
+{ "primitives": [
+  {"type":"axes","xMin":-4,"xMax":4,"yMin":-2,"yMax":2},
+  {"type":"shape","id":"wall","shape":"rect","x":-3.8,"y":0,"width":12,"height":80,"fill":"#52525b"},
+  {"type":"shape","id":"mass","shape":"circle","x":-2.12,"y":0,"radius":16,"fill":"#ef4444"},
+  {"type":"label","id":"pos","x":-3.5,"y":1.7,"text":"t = 5\\pi/8,\\ x \\approx -2.12","latex":true},
+  {"type":"label","id":"eq","x":-3.5,"y":1.2,"text":"v > 0,\\ a > 0","latex":true}
+] }
+```
+
+```scene step=6 narration="t = 3π/4 s: passing equilibrium moving right. Peak velocity again." code_lines=13
+{ "primitives": [
+  {"type":"axes","xMin":-4,"xMax":4,"yMin":-2,"yMax":2},
+  {"type":"shape","id":"wall","shape":"rect","x":-3.8,"y":0,"width":12,"height":80,"fill":"#52525b"},
+  {"type":"shape","id":"mass","shape":"circle","x":0,"y":0,"radius":16,"fill":"#ef4444"},
+  {"type":"arrow","id":"v","from":[0,0],"to":[1.5,0],"label":"v"},
+  {"type":"label","id":"pos","x":-3.5,"y":1.7,"text":"t = 3\\pi/4,\\ x = 0","latex":true},
+  {"type":"label","id":"eq","x":-3.5,"y":1.2,"text":"|v| = A\\omega = 6\\ \\text{m/s}","latex":true}
+] }
+```
+
+```scene step=7 narration="t = 7π/8 s: approaching the right turning point again." code_lines=10
+{ "primitives": [
+  {"type":"axes","xMin":-4,"xMax":4,"yMin":-2,"yMax":2},
+  {"type":"shape","id":"wall","shape":"rect","x":-3.8,"y":0,"width":12,"height":80,"fill":"#52525b"},
+  {"type":"shape","id":"mass","shape":"circle","x":2.12,"y":0,"radius":16,"fill":"#ef4444"},
+  {"type":"label","id":"pos","x":-3.5,"y":1.7,"text":"t = 7\\pi/8,\\ x \\approx 2.12","latex":true},
+  {"type":"label","id":"eq","x":-3.5,"y":1.2,"text":"v > 0,\\ a < 0","latex":true}
+] }
+```
+
+```scene step=8 narration="t = π s: back at x = +A. One full period T = π s completed." code_lines=13
+{ "primitives": [
+  {"type":"axes","xMin":-4,"xMax":4,"yMin":-2,"yMax":2},
+  {"type":"shape","id":"wall","shape":"rect","x":-3.8,"y":0,"width":12,"height":80,"fill":"#52525b"},
+  {"type":"shape","id":"mass","shape":"circle","x":3,"y":0,"radius":16,"fill":"#ef4444"},
+  {"type":"label","id":"pos","x":-3.5,"y":1.7,"text":"t = T = \\pi\\ \\text{s}","latex":true},
+  {"type":"label","id":"eq","x":-3.5,"y":1.2,"text":"Period\\ T = 2\\pi/\\omega = \\pi","latex":true}
+] }
+```
+
+## Quiz
+
+?? If the mass were doubled (to 2 kg) with the same spring, what happens to the period?
+>> Period $T = 2\pi\sqrt{m/k}$, so doubling $m$ multiplies $T$ by $\sqrt{2} \approx 1.41$. The new period would be $\pi\sqrt{2} \approx 4.44$ s.
+
+?? At what position does the mass have maximum kinetic energy, and why?
+>> At equilibrium ($x = 0$). Kinetic energy is $\tfrac{1}{2}mv^2$, and $|v|$ peaks at equilibrium because that's where the restoring force has been accelerating the mass for a quarter period. At the turning points $v = 0$ so KE is zero.

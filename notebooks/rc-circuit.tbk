@@ -1,0 +1,130 @@
+---
+version: 0.1
+title: RC Circuit Charging
+subject: electronics
+author: Teachbook starter
+---
+
+# RC Circuit — Capacitor Charging
+
+An RC circuit has a resistor $R$ and capacitor $C$ in series with a battery
+$V_0$. When the switch closes, charge flows onto the capacitor until its
+voltage matches the battery. The current decays exponentially because the
+voltage across $R$ drops as the capacitor charges.
+
+Kirchhoff's voltage law: $V_0 = IR + V_C$. With $I = dQ/dt$ and $V_C = Q/C$,
+this becomes a first-order ODE. The solution:
+
+$$
+V_C(t) = V_0 \left(1 - e^{-t/\tau}\right), \qquad I(t) = \frac{V_0}{R} e^{-t/\tau}
+$$
+
+where $\tau = RC$ is the **time constant**. After one $\tau$ the capacitor
+is charged to 63% of $V_0$; after five $\tau$ it's effectively full (> 99%).
+
+For this example: $V_0 = 10$ V, $R = 1$ kΩ, $C = 1$ mF, so
+$\tau = RC = 1$ s.
+
+```text
+1. Apply Kirchhoff's voltage law
+     V0 = I·R + V_C
+
+2. Express current and capacitor voltage in terms of charge
+     I = dQ/dt
+     V_C = Q/C
+
+3. Combine to get the ODE
+     V0 = R · dQ/dt + Q/C
+
+4. Solve (separable ODE, integrating factor, or by inspection)
+     Q(t)   = C·V0 · (1 - exp(-t/τ))
+     V_C(t) = V0   · (1 - exp(-t/τ))
+     I(t)   = (V0/R) · exp(-t/τ)
+
+5. Key fractions of the final voltage:
+     t = 1τ → 63%
+     t = 2τ → 86%
+     t = 3τ → 95%
+     t = 5τ → 99.3%  (treat as "fully charged")
+```
+
+## Stepping through the charge curve
+
+```scene step=0 narration="t = 0: switch closes. Capacitor is empty, all the battery voltage falls across R." code_lines=4-5
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":5,"yMin":0,"yMax":11},
+  {"type":"shape","id":"marker","shape":"circle","x":0,"y":0,"radius":5,"fill":"#ef4444"},
+  {"type":"label","id":"eq","x":0.3,"y":10,"text":"V_C(0) = 0,\\ I(0) = V_0/R = 10\\ \\text{mA}","latex":true}
+] }
+```
+
+```scene step=1 narration="t = 0.2 s (0.2 τ): current starts flowing, charge accumulates. V_C ≈ 1.8 V." code_lines=13
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":5,"yMin":0,"yMax":11},
+  {"type":"plot","points":[[0,0],[0.2,1.81]]},
+  {"type":"shape","id":"marker","shape":"circle","x":0.2,"y":1.81,"radius":5,"fill":"#ef4444"},
+  {"type":"label","id":"eq","x":0.3,"y":10,"text":"V_C(0.2) = 10(1 - e^{-0.2}) \\approx 1.81\\ \\text{V}","latex":true}
+] }
+```
+
+```scene step=2 narration="t = 0.5 s: V_C ≈ 3.93 V — about 39% of V0." code_lines=13
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":5,"yMin":0,"yMax":11},
+  {"type":"plot","points":[[0,0],[0.2,1.81],[0.5,3.93]]},
+  {"type":"shape","id":"marker","shape":"circle","x":0.5,"y":3.93,"radius":5,"fill":"#ef4444"},
+  {"type":"label","id":"eq","x":0.3,"y":10,"text":"V_C(0.5) \\approx 3.93\\ \\text{V}","latex":true}
+] }
+```
+
+```scene step=3 narration="t = 1 τ = 1 s: V_C = V0(1 - 1/e) ≈ 6.32 V. This is the defining moment of τ." code_lines=17
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":5,"yMin":0,"yMax":11},
+  {"type":"plot","points":[[0,0],[0.2,1.81],[0.5,3.93],[1,6.32]]},
+  {"type":"shape","id":"marker","shape":"circle","x":1,"y":6.32,"radius":5,"fill":"#ef4444"},
+  {"type":"label","id":"eq","x":0.3,"y":10,"text":"t = \\tau: V_C = V_0(1 - 1/e) \\approx 63\\%","latex":true}
+] }
+```
+
+```scene step=4 narration="t = 1.5 s: V_C ≈ 7.77 V. Charging rate is slowing down because I = (V0 - V_C)/R is smaller." code_lines=14
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":5,"yMin":0,"yMax":11},
+  {"type":"plot","points":[[0,0],[0.2,1.81],[0.5,3.93],[1,6.32],[1.5,7.77]]},
+  {"type":"shape","id":"marker","shape":"circle","x":1.5,"y":7.77,"radius":5,"fill":"#ef4444"},
+  {"type":"label","id":"eq","x":0.3,"y":10,"text":"I(1.5) = 10\\ \\text{mA} \\cdot e^{-1.5} \\approx 2.23\\ \\text{mA}","latex":true}
+] }
+```
+
+```scene step=5 narration="t = 2 τ = 2 s: V_C ≈ 8.65 V (86% of V0)." code_lines=18
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":5,"yMin":0,"yMax":11},
+  {"type":"plot","points":[[0,0],[0.2,1.81],[0.5,3.93],[1,6.32],[1.5,7.77],[2,8.65]]},
+  {"type":"shape","id":"marker","shape":"circle","x":2,"y":8.65,"radius":5,"fill":"#ef4444"},
+  {"type":"label","id":"eq","x":0.3,"y":10,"text":"t = 2\\tau: V_C \\approx 86\\%","latex":true}
+] }
+```
+
+```scene step=6 narration="t = 3 τ = 3 s: V_C ≈ 9.50 V (95%). The curve is visibly flattening." code_lines=19
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":5,"yMin":0,"yMax":11},
+  {"type":"plot","points":[[0,0],[0.2,1.81],[0.5,3.93],[1,6.32],[1.5,7.77],[2,8.65],[3,9.50]]},
+  {"type":"shape","id":"marker","shape":"circle","x":3,"y":9.50,"radius":5,"fill":"#ef4444"},
+  {"type":"label","id":"eq","x":0.3,"y":10,"text":"t = 3\\tau: V_C \\approx 95\\%","latex":true}
+] }
+```
+
+```scene step=7 narration="t = 5 τ = 5 s: V_C ≈ 9.93 V. Charging is effectively complete." code_lines=20
+{ "primitives": [
+  {"type":"axes","xMin":0,"xMax":5,"yMin":0,"yMax":11},
+  {"type":"plot","points":[[0,0],[0.2,1.81],[0.5,3.93],[1,6.32],[1.5,7.77],[2,8.65],[3,9.50],[4,9.82],[5,9.93]]},
+  {"type":"shape","id":"marker","shape":"circle","x":5,"y":9.93,"radius":5,"fill":"#ef4444"},
+  {"type":"label","id":"eq","x":0.3,"y":10,"text":"t = 5\\tau: V_C > 99\\%\\ \\text{of}\\ V_0","latex":true}
+] }
+```
+
+## Quiz
+
+?? If we doubled the resistance $R$ (keeping $C$ the same), what happens to the shape of the $V_C(t)$ curve?
+>> The time constant $\tau = RC$ doubles. The curve has the same shape but stretches horizontally — the capacitor now takes twice as long to reach any given fraction of $V_0$. The final voltage is unchanged.
+
+?? At $t = \tau$ the capacitor holds 63% of $V_0$. What fraction of the total energy stored at "full charge" does it hold at that moment?
+>> Energy stored in a capacitor is $\tfrac{1}{2}CV^2$, so at $V_C = 0.63 V_0$ the stored energy is $(0.63)^2 \approx 40\%$ of the final energy. The voltage is 63% but the energy lags — you need $t \approx 2.7\tau$ to reach half the total stored energy.

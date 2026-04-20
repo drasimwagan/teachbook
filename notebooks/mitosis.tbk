@@ -1,0 +1,172 @@
+---
+version: 0.1
+title: Mitosis — The Stages of Cell Division
+subject: biology
+author: Teachbook starter
+---
+
+# Mitosis
+
+Mitosis is how a eukaryotic cell divides its replicated nucleus so each
+daughter cell gets an identical copy of the DNA. It has five main phases —
+remember the mnemonic **IPMAT** (plus cytokinesis): **I**nterphase,
+**P**rophase, **M**etaphase, **A**naphase, **T**elophase.
+
+```text
+1. Interphase (preparation)
+     • DNA replicates — each chromosome becomes two "sister chromatids"
+       joined at a centromere.
+     • Cell grows and makes proteins.
+
+2. Prophase
+     • Chromatin condenses into visible chromosomes.
+     • Nuclear envelope breaks down.
+     • Mitotic spindle (microtubules) begins to form from the centrosomes.
+
+3. Metaphase
+     • Chromosomes align along the cell's equator ("metaphase plate").
+     • Spindle fibers attach to each centromere from opposite poles.
+
+4. Anaphase
+     • Sister chromatids separate — centromeres split.
+     • Each half moves toward an opposite pole, pulled by spindle fibers.
+
+5. Telophase
+     • Nuclear envelopes reform around the two sets of chromosomes.
+     • Chromosomes de-condense back into chromatin.
+
+6. Cytokinesis (often shown alongside telophase)
+     • Cytoplasm pinches in two. Two daughter cells result, each genetically
+       identical to the parent.
+```
+
+## Stepping through the phases
+
+```scene step=0 narration="Interphase: the cell grows and copies its DNA. The four chromosomes (shown in the nucleus) each get duplicated." code_lines=2-4
+{ "primitives": [
+  {"type":"shape","id":"cell","shape":"circle","x":400,"y":250,"radius":180,"fill":"#fef3c7","stroke":"#ca8a04"},
+  {"type":"shape","id":"nucleus","shape":"circle","x":400,"y":250,"radius":100,"fill":"#ddd6fe","stroke":"#6d28d9"},
+  {"type":"shape","shape":"circle","x":360,"y":220,"radius":10,"fill":"#7c3aed"},
+  {"type":"shape","shape":"circle","x":440,"y":220,"radius":10,"fill":"#7c3aed"},
+  {"type":"shape","shape":"circle","x":360,"y":280,"radius":10,"fill":"#7c3aed"},
+  {"type":"shape","shape":"circle","x":440,"y":280,"radius":10,"fill":"#7c3aed"},
+  {"type":"label","id":"phase","x":60,"y":50,"text":"Phase: Interphase"},
+  {"type":"label","id":"note","x":60,"y":80,"text":"Each chromosome replicates into two sister chromatids."}
+] }
+```
+
+```scene step=1 narration="Prophase begins: chromatin condenses into visible X-shaped chromosomes. Nuclear envelope starts breaking down." code_lines=7-10
+{ "primitives": [
+  {"type":"shape","id":"cell","shape":"circle","x":400,"y":250,"radius":180,"fill":"#fef3c7","stroke":"#ca8a04"},
+  {"type":"shape","id":"nucleus","shape":"circle","x":400,"y":250,"radius":100,"fill":"#ddd6fe","stroke":"#a78bfa"},
+  {"type":"shape","shape":"rect","x":360,"y":220,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":368,"y":220,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":432,"y":220,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":440,"y":220,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":360,"y":280,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":368,"y":280,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":432,"y":280,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":440,"y":280,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"label","id":"phase","x":60,"y":50,"text":"Phase: Prophase"},
+  {"type":"label","id":"note","x":60,"y":80,"text":"Chromosomes condense. Nuclear envelope fading."}
+] }
+```
+
+```scene step=2 narration="Late prophase (prometaphase): nuclear envelope gone. Spindle fibers attach to centromeres of each chromosome." code_lines=11-12
+{ "primitives": [
+  {"type":"shape","id":"cell","shape":"circle","x":400,"y":250,"radius":180,"fill":"#fef3c7","stroke":"#ca8a04"},
+  {"type":"shape","id":"cent1","shape":"circle","x":220,"y":250,"radius":12,"fill":"#0891b2"},
+  {"type":"shape","id":"cent2","shape":"circle","x":580,"y":250,"radius":12,"fill":"#0891b2"},
+  {"type":"arrow","from":[230,245],"to":[370,220]},
+  {"type":"arrow","from":[230,255],"to":[370,280]},
+  {"type":"arrow","from":[570,245],"to":[430,220]},
+  {"type":"arrow","from":[570,255],"to":[430,280]},
+  {"type":"shape","shape":"rect","x":360,"y":220,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":368,"y":220,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":432,"y":220,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":440,"y":220,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":360,"y":280,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":368,"y":280,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":432,"y":280,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":440,"y":280,"width":8,"height":30,"fill":"#7c3aed"},
+  {"type":"label","id":"phase","x":60,"y":50,"text":"Phase: Prometaphase"},
+  {"type":"label","id":"note","x":60,"y":80,"text":"Spindle fibers reach the centromeres from both poles."}
+] }
+```
+
+```scene step=3 narration="Metaphase: chromosomes align along the equator. Spindle tension pulls centromeres equally from both sides." code_lines=14-17
+{ "primitives": [
+  {"type":"shape","id":"cell","shape":"circle","x":400,"y":250,"radius":180,"fill":"#fef3c7","stroke":"#ca8a04"},
+  {"type":"shape","id":"cent1","shape":"circle","x":220,"y":250,"radius":12,"fill":"#0891b2"},
+  {"type":"shape","id":"cent2","shape":"circle","x":580,"y":250,"radius":12,"fill":"#0891b2"},
+  {"type":"arrow","from":[230,250],"to":[395,170]},
+  {"type":"arrow","from":[230,250],"to":[395,240]},
+  {"type":"arrow","from":[230,250],"to":[395,310]},
+  {"type":"arrow","from":[230,250],"to":[395,340]},
+  {"type":"arrow","from":[570,250],"to":[405,170]},
+  {"type":"arrow","from":[570,250],"to":[405,240]},
+  {"type":"arrow","from":[570,250],"to":[405,310]},
+  {"type":"arrow","from":[570,250],"to":[405,340]},
+  {"type":"shape","shape":"rect","x":396,"y":160,"width":8,"height":26,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":396,"y":230,"width":8,"height":26,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":396,"y":300,"width":8,"height":26,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":396,"y":340,"width":8,"height":26,"fill":"#c026d3"},
+  {"type":"label","id":"phase","x":60,"y":50,"text":"Phase: Metaphase"},
+  {"type":"label","id":"note","x":60,"y":80,"text":"Chromosomes lined up on the metaphase plate."}
+] }
+```
+
+```scene step=4 narration="Anaphase: centromeres split. Sister chromatids are pulled toward opposite poles." code_lines=19-22
+{ "primitives": [
+  {"type":"shape","id":"cell","shape":"circle","x":400,"y":250,"radius":180,"fill":"#fef3c7","stroke":"#ca8a04"},
+  {"type":"shape","id":"cent1","shape":"circle","x":220,"y":250,"radius":12,"fill":"#0891b2"},
+  {"type":"shape","id":"cent2","shape":"circle","x":580,"y":250,"radius":12,"fill":"#0891b2"},
+  {"type":"shape","shape":"rect","x":320,"y":200,"width":8,"height":26,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":320,"y":260,"width":8,"height":26,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":320,"y":290,"width":8,"height":26,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":320,"y":320,"width":8,"height":26,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":472,"y":200,"width":8,"height":26,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":472,"y":260,"width":8,"height":26,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":472,"y":290,"width":8,"height":26,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":472,"y":320,"width":8,"height":26,"fill":"#7c3aed"},
+  {"type":"label","id":"phase","x":60,"y":50,"text":"Phase: Anaphase"},
+  {"type":"label","id":"note","x":60,"y":80,"text":"Sister chromatids separating toward opposite poles."}
+] }
+```
+
+```scene step=5 narration="Telophase: nuclear envelopes reform around each set of chromosomes. Cell begins to pinch in the middle." code_lines=24-27
+{ "primitives": [
+  {"type":"shape","id":"cell","shape":"circle","x":400,"y":250,"radius":180,"fill":"#fef3c7","stroke":"#ca8a04"},
+  {"type":"shape","shape":"circle","x":270,"y":250,"radius":70,"fill":"#ddd6fe","stroke":"#a78bfa"},
+  {"type":"shape","shape":"circle","x":530,"y":250,"radius":70,"fill":"#ddd6fe","stroke":"#a78bfa"},
+  {"type":"shape","shape":"rect","x":250,"y":230,"width":6,"height":20,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":280,"y":230,"width":6,"height":20,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":250,"y":260,"width":6,"height":20,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":280,"y":260,"width":6,"height":20,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":510,"y":230,"width":6,"height":20,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":540,"y":230,"width":6,"height":20,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":510,"y":260,"width":6,"height":20,"fill":"#7c3aed"},
+  {"type":"shape","shape":"rect","x":540,"y":260,"width":6,"height":20,"fill":"#7c3aed"},
+  {"type":"label","id":"phase","x":60,"y":50,"text":"Phase: Telophase"},
+  {"type":"label","id":"note","x":60,"y":80,"text":"Two new nuclei form. Chromatin begins to de-condense."}
+] }
+```
+
+```scene step=6 narration="Cytokinesis: the cytoplasm splits. Two genetically identical daughter cells." code_lines=29-31
+{ "primitives": [
+  {"type":"shape","id":"daughter1","shape":"circle","x":230,"y":250,"radius":110,"fill":"#fef3c7","stroke":"#ca8a04"},
+  {"type":"shape","id":"daughter2","shape":"circle","x":570,"y":250,"radius":110,"fill":"#fef3c7","stroke":"#ca8a04"},
+  {"type":"shape","shape":"circle","x":230,"y":250,"radius":60,"fill":"#ddd6fe","stroke":"#a78bfa"},
+  {"type":"shape","shape":"circle","x":570,"y":250,"radius":60,"fill":"#ddd6fe","stroke":"#a78bfa"},
+  {"type":"label","id":"phase","x":60,"y":50,"text":"Phase: Cytokinesis"},
+  {"type":"label","id":"note","x":60,"y":80,"text":"Two daughter cells, each with the same 4 chromosomes."}
+] }
+```
+
+## Quiz
+
+?? Why is it critical that chromosomes align at the metaphase plate *before* anaphase begins?
+>> The cell has a "spindle assembly checkpoint" — anaphase only proceeds once every chromosome is attached to fibers from both poles. Skipping this check would mean sister chromatids might not separate evenly, producing daughter cells with the wrong number of chromosomes (aneuploidy).
+
+?? How does mitosis differ from meiosis in its final outcome?
+>> Mitosis produces two genetically identical diploid daughter cells (used for growth and repair). Meiosis produces four genetically distinct haploid daughter cells (used for sexual reproduction — sperm, eggs). Meiosis includes an extra round of division and a chromosome-shuffling step (crossing over).
