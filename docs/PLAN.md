@@ -108,11 +108,13 @@ Parser lives in `src/lib/tbk-parser.ts` (to be written). Uses `remark` +
 - [ ] Play/step controls wired end-to-end
 
 ### Phase 1 — `.tbk` parser + Claude authoring
-- [ ] Write `tbk-parser.ts` and `tbk-serializer.ts` (round-trip safe)
-- [ ] Render Markdown prose in concept pane
-- [ ] All 8 core primitives in `SceneRenderer.tsx`
-- [ ] Rust command to spawn `claude` CLI as subprocess
-- [ ] "Ask Claude to generate steps" button — emits a full `.tbk`
+- [x] Write `tbk-parser.ts` and `tbk-serializer.ts` (round-trip safe)
+- [x] All 8 core primitives in `SceneRenderer.tsx`
+- [x] Rust command to spawn `claude` CLI as subprocess (`claude_prompt`, `claude_generate_notebook`)
+- [x] "Generate notebook" dialog — teacher types a prompt, Claude returns a full `.tbk`
+- [x] Chat wired to Claude with notebook + step context
+- [ ] Render Markdown prose in concept pane (still CodeMirror-only)
+- [ ] Stream responses via Tauri events (currently blocking)
 
 ### Phase 2 — Chat pane + student interactivity
 - [ ] Chat pane wired to Claude with notebook context

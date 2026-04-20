@@ -5,7 +5,9 @@ chemistry, biology, math — with AI-generated visualizations. Students and teac
 load a `.tbk` notebook, step through the concept like a debugger, and ask Claude
 questions about what they see.
 
-> Status: early scaffolding. Not yet usable. See [`docs/PLAN.md`](docs/PLAN.md).
+> Status: Phase 1 — the engine is usable. You can open/edit notebooks, step
+> through them debugger-style, generate new notebooks via Claude, and chat with
+> Claude about the current step. See [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Why
 
@@ -34,9 +36,14 @@ git-diffable, shareable as a single file.
 - **Student code execution**: Pyodide (WASM, planned)
 - **AI**: Claude Code CLI subprocess (uses your existing subscription) — API key mode coming later
 
-## Development
+## Requirements
 
-Requires Node 18+, pnpm, Rust stable.
+- Node 18+, pnpm, Rust stable
+- [Claude Code](https://claude.com/claude-code) installed and logged in
+  (`claude login`) — Teachbook spawns the `claude` CLI for all AI features.
+  If `claude` isn't on your PATH, set `TEACHBOOK_CLAUDE_BIN=/full/path/to/claude`.
+
+## Development
 
 ```bash
 pnpm install

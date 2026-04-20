@@ -5,6 +5,7 @@ import ConceptPane from "./components/ConceptPane";
 import VisualizationPane from "./components/VisualizationPane";
 import ChatPane from "./components/ChatPane";
 import StepControls from "./components/StepControls";
+import GenerateDialog from "./components/GenerateDialog";
 import { parseTbk } from "./lib/tbk-parser";
 import type { Notebook } from "./types";
 import "./App.css";
@@ -27,6 +28,7 @@ function App() {
   const [currentPath, setCurrentPath] = useState<string | null>(null);
   const [source, setSource] = useState<string>(WELCOME);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   // Initial parse of welcome text
   useEffect(() => {
@@ -126,6 +128,12 @@ function App() {
           >
             Save
           </button>
+          <button
+            onClick={() => setGenerateOpen(true)}
+            className="rounded bg-blue-600 text-white px-2 py-1 text-sm hover:bg-blue-700"
+          >
+            Generate
+          </button>
           <StepControls
             currentStep={currentStep}
             totalSteps={totalSteps}
@@ -142,8 +150,21 @@ function App() {
           activeSceneRange={activeSceneRange}
         />
         <VisualizationPane notebook={notebook} currentStep={currentStep} />
-        <ChatPane notebook={notebook} />
+        <ChatPane
+          notebook={notebook}
+          source={source}
+          currentStep={currentStep}
+        />
       </main>
+      <GenerateDialog
+        open={generateOpen}
+        onClose={() => setGenerateOpen(false)}
+        onGenerated={(tbk) => {
+          setSource(tbk);
+          setCurrentPath(null);
+          setCurrentStep(0);
+        }}
+      />
     </div>
   );
 }

@@ -61,10 +61,29 @@ Rust (`src-tauri/src/lib.rs`) owns:
 Everything else — parsing, rendering, state, stepping — lives in TypeScript. Keep
 the Rust surface small; treat it as a privileged-operations layer, not a backend.
 
-### Claude integration plan
-v0.1 targets the Claude Code CLI subprocess only. Users already logged in via
-`claude` get AI features for free. API-key mode (direct Anthropic SDK) comes in v0.2.
-Both should go through one trait on the Rust side so the frontend doesn't care.
+### Claude integration
+v0.1 uses the Claude Code CLI (`claude`) as a subprocess. Users already logged in
+via `claude login` get AI features with no extra setup. API-key mode (direct
+Anthropic SDK) is planned for v0.2.
+
+Rust commands (see `src-tauri/src/claude.rs`):
+- `claude_check()` — verifies the CLI is reachable
+- `claude_prompt(prompt, system_prompt?)` — one-shot text completion, returns stdout
+- `claude_generate_notebook(request)` — prepends the .tbk format guide and strips
+  any accidental outer code fences Claude adds; returns clean `.tbk` content
+
+Binary resolution: `resolve_claude_binary()` tries `$TEACHBOOK_CLAUDE_BIN`, then
+`claude` in PATH, then `/opt/homebrew/bin/claude`, `/usr/local/bin/claude`, and
+`$HOME/.local/bin/claude`. macOS Finder-launched Tauri apps often miss the user's
+PATH, which is why fallbacks exist.
+
+Frontend helpers live in `src/lib/claude.ts`. `chatSystemPrompt()` builds the
+student-tutor system message with current notebook + step context; the chat pane
+assembles a conversational history and submits via `claude_prompt`.
+
+The `.tbk` format reference given to Claude lives in `TBK_FORMAT_GUIDE` in
+`claude.rs`. When the schema changes (new primitive, new scene meta field),
+update that constant and `docs/PLAN.md` in the same commit.
 
 ## Conventions
 
