@@ -24,9 +24,14 @@ Scene primitive types (pick those that fit; all have type=<name>):
 - shape: { type: "shape", shape: "circle"|"rect"|"polygon", x, y, radius?, width?, height?, fill?, stroke? }
 - arrow: { type: "arrow", from: [x, y], to: [x, y], label? }
 - label: { type: "label", x, y, text, latex? }
+  // When latex is true, `text` is a LaTeX expression (e.g. "v_y = \\frac{1}{2} g t^2").
+  // Prefer LaTeX for any equation. Escape backslashes in JSON: \\frac, \\theta, \\approx.
 - axes: { type: "axes", xMin, xMax, yMin, yMax }  // include with physics/plots
 - plot: { type: "plot", points: [[x,y],...], label? }
 - graph: { type: "graph", nodes: [{id, x, y, label?}], edges: [[a,b],...] }
+
+Prose supports LaTeX too: inline $...$ and block $$...$$. Prefer this over
+unicode subscripts or fractions.
 
 Coordinate rules:
 - With axes, use the domain units (meters, seconds, etc.). Other primitives auto-project.

@@ -7,38 +7,47 @@ author: Teachbook starter
 
 # Projectile Motion
 
-A ball launched at angle θ with initial speed v₀ follows a parabolic trajectory
-under gravity. We can treat horizontal and vertical motion independently because
-gravity only acts vertically.
+A ball launched at angle $\theta$ with initial speed $v_0$ follows a parabolic
+trajectory under gravity. Because gravity only acts vertically, we can treat
+horizontal and vertical motion independently.
 
-Here we launch a ball at **θ = 30°** with **v₀ = 20 m/s**, g = 9.8 m/s².
+Here we launch a ball at $\theta = 30°$ with $v_0 = 20\ \text{m/s}$,
+$g = 9.8\ \text{m/s}^2$.
 
 ```text
 1. Decompose initial velocity into components
-     vₓ = v₀ · cos(θ) = 20 · cos(30°) = 17.32 m/s
-     vᵧ = v₀ · sin(θ) = 20 · sin(30°) = 10.00 m/s
+     vx = v0 · cos(θ) = 20 · cos(30°) = 17.32 m/s
+     vy = v0 · sin(θ) = 20 · sin(30°) = 10.00 m/s
 
 2. Apply kinematic equations at time t
-     x(t) = vₓ · t
-     y(t) = vᵧ · t − ½ · g · t²
+     x(t) = vx · t
+     y(t) = vy · t − (1/2) · g · t²
 
 3. At the peak, vertical velocity is zero
-     vᵧ − g·t_peak = 0    ⇒    t_peak = vᵧ / g ≈ 1.02 s
+     vy − g·t_peak = 0    ⇒    t_peak = vy / g ≈ 1.02 s
 
 4. Total flight time (ball returns to y = 0)
-     t_flight = 2 · vᵧ / g ≈ 2.04 s
+     t_flight = 2 · vy / g ≈ 2.04 s
 
 5. Evaluate the trajectory at successive timesteps.
 ```
 
+The governing equations are:
+
+$$
+x(t) = v_0 \cos(\theta) \cdot t
+\qquad
+y(t) = v_0 \sin(\theta) \cdot t - \tfrac{1}{2} g t^2
+$$
+
 ## Stepping through the trajectory
 
-```scene step=0 narration="t = 0: ball at origin, initial velocity decomposes into vₓ = 17.32 and vᵧ = 10 m/s." code_lines=2-3
+```scene step=0 narration="t = 0: ball at origin, initial velocity decomposes into vx = 17.32 and vy = 10 m/s." code_lines=2-3
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"shape","shape":"circle","x":0,"y":0,"radius":6,"fill":"#ef4444"},
   {"type":"arrow","from":[0,0],"to":[5,2.89],"label":"v₀"},
-  {"type":"label","x":18,"y":7,"text":"θ = 30°, v₀ = 20 m/s"}
+  {"type":"label","x":14,"y":7.3,"text":"v_0 = 20\\ \\text{m/s},\\ \\theta = 30°","latex":true}
 ] }
 ```
 
@@ -47,26 +56,26 @@ Here we launch a ball at **θ = 30°** with **v₀ = 20 m/s**, g = 9.8 m/s².
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"plot","points":[[0,0],[6.93,3.22]]},
   {"type":"shape","shape":"circle","x":6.93,"y":3.22,"radius":6,"fill":"#ef4444"},
-  {"type":"label","x":18,"y":7,"text":"t = 0.4 s"}
+  {"type":"label","x":14,"y":7.3,"text":"t = 0.4\\ \\text{s}","latex":true}
 ] }
 ```
 
-```scene step=2 narration="t = 0.8 s: approaching the peak. Vertical velocity has decreased to 10 − 9.8·0.8 = 2.16 m/s." code_lines=6-7
+```scene step=2 narration="t = 0.8 s: approaching the peak. Vertical velocity has decreased to 2.16 m/s." code_lines=6-7
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86]]},
   {"type":"shape","shape":"circle","x":13.86,"y":4.86,"radius":6,"fill":"#ef4444"},
-  {"type":"label","x":18,"y":7,"text":"t = 0.8 s"}
+  {"type":"label","x":14,"y":7.3,"text":"v_y = v_0 \\sin\\theta - g t = 2.16\\ \\text{m/s}","latex":true}
 ] }
 ```
 
-```scene step=3 narration="t = 1.02 s: peak. Vertical velocity = 0, horizontal velocity unchanged." code_lines=9
+```scene step=3 narration="t ≈ 1.02 s: peak. Vertical velocity = 0, horizontal velocity unchanged." code_lines=9
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[17.67,5.10]]},
   {"type":"shape","shape":"circle","x":17.67,"y":5.10,"radius":6,"fill":"#ef4444"},
-  {"type":"arrow","from":[17.67,5.10],"to":[22.67,5.10],"label":"vₓ"},
-  {"type":"label","x":18,"y":7,"text":"peak — t ≈ 1.02 s"}
+  {"type":"arrow","from":[17.67,5.10],"to":[22.67,5.10],"label":"vx"},
+  {"type":"label","x":14,"y":7.3,"text":"t_{\\text{peak}} = v_y / g \\approx 1.02\\ \\text{s}","latex":true}
 ] }
 ```
 
@@ -75,20 +84,20 @@ Here we launch a ball at **θ = 30°** with **v₀ = 20 m/s**, g = 9.8 m/s².
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[17.67,5.10],[27.71,3.46]]},
   {"type":"shape","shape":"circle","x":27.71,"y":3.46,"radius":6,"fill":"#ef4444"},
-  {"type":"label","x":18,"y":7,"text":"t = 1.6 s"}
+  {"type":"label","x":14,"y":7.3,"text":"y(t) = v_y t - \\tfrac{1}{2} g t^2","latex":true}
 ] }
 ```
 
-```scene step=5 narration="t ≈ 2.04 s: ball lands. Total flight time = 2·vᵧ/g." code_lines=12
+```scene step=5 narration="t ≈ 2.04 s: ball lands. Total flight time = 2·vy/g." code_lines=12
 { "primitives": [
   {"type":"axes","xMin":0,"xMax":40,"yMin":0,"yMax":8},
   {"type":"plot","points":[[0,0],[6.93,3.22],[13.86,4.86],[17.67,5.10],[27.71,3.46],[34.64,0]]},
   {"type":"shape","shape":"circle","x":34.64,"y":0,"radius":6,"fill":"#ef4444"},
-  {"type":"label","x":18,"y":7,"text":"landed at x ≈ 35.3 m"}
+  {"type":"label","x":14,"y":7.3,"text":"t_{\\text{flight}} = 2 v_y / g \\approx 2.04\\ \\text{s}","latex":true}
 ] }
 ```
 
 ## Quiz
 
 ?? At the peak of its trajectory, what is the ball's vertical velocity, and what is its horizontal velocity?
->> Vertical velocity is 0 m/s (that defines the peak). Horizontal velocity is unchanged at v₀·cos(θ) ≈ 17.3 m/s — gravity only affects vertical motion.
+>> Vertical velocity is 0 m/s (that defines the peak). Horizontal velocity is unchanged at $v_0 \cos(\theta) \approx 17.3$ m/s — gravity only affects vertical motion.

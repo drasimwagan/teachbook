@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+import katex from "katex";
 import type {
   ArrowPrimitive,
   AxesPrimitive,
@@ -168,6 +170,36 @@ function Arrow({ p, axes }: { p: ArrowPrimitive; axes: AxisCtx }) {
 
 function Label({ p, axes }: { p: LabelPrimitive; axes: AxisCtx }) {
   const [x, y] = project(axes, p.x, p.y);
+
+  const html = useMemo(() => {
+    if (!p.latex) return null;
+    try {
+      return katex.renderToString(p.text, {
+        throwOnError: false,
+        displayMode: false,
+      });
+    } catch {
+      return null;
+    }
+  }, [p.text, p.latex]);
+
+  if (p.latex && html) {
+    return (
+      <foreignObject
+        x={x - 4}
+        y={y - 18}
+        width={260}
+        height={36}
+        style={{ overflow: "visible" }}
+      >
+        <div
+          style={{ fontSize: "15px", color: "currentColor", whiteSpace: "nowrap" }}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      </foreignObject>
+    );
+  }
+
   return (
     <text x={x} y={y} fontSize={14} fill="currentColor" className="text-zinc-800 dark:text-zinc-100">
       {p.text}
