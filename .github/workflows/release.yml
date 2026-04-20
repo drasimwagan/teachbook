@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-installers:
+    name: Build installer (${{ matrix.settings.platform }})
+    runs-on: ${{ matrix.settings.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - platform: macos-latest
+            args: --target universal-apple-darwin
+          - platform: ubuntu-22.04
+            args: ''
+          - platform: windows-latest
+            args: ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.settings.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux deps
+        if: matrix.settings.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build installer
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Teachbook ${{ github.ref_name }}'
+          releaseBody: |
+            See [CHANGELOG](https://github.com/drasimwagan/teachbook/blob/main/docs/PLAN.md) for what shipped.
+
+            ## Install
+
+            - **macOS**: download the `.dmg`, open, drag Teachbook to Applications
+            - **Windows**: download the `.msi`, run installer
+            - **Linux**: download the `.AppImage` and `chmod +x` it, or install the `.deb`
+
+            ## Requirements
+
+            Claude Code must be installed and logged in (`claude login`). See [README](https://github.com/drasimwagan/teachbook#requirements).
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.settings.args }}

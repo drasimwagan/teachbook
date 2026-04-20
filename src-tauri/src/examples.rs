@@ -20,6 +20,7 @@ const METHANE_COMBUSTION: &str = include_str!("../../notebooks/methane-combustio
 const PERCEPTRON: &str = include_str!("../../notebooks/perceptron-forward.tbk");
 const CONVOLUTION: &str = include_str!("../../notebooks/convolution.tbk");
 const QUBIT_GATES: &str = include_str!("../../notebooks/qubit-gates.tbk");
+const RC_CIRCUIT_SCHEMATIC: &str = include_str!("../../notebooks/rc-circuit-schematic.tbk");
 
 #[tauri::command]
 pub fn list_bundled_notebooks() -> Vec<BundledNotebook> {
@@ -82,7 +83,11 @@ pub fn list_bundled_notebooks() -> Vec<BundledNotebook> {
             filename: "qubit-gates.tbk".into(),
             content: QUBIT_GATES.into(),
         },
-        // Electronics
+        // Electronics (rc-circuit-schematic.tbk uses the circuit plugin)
+        BundledNotebook {
+            filename: "rc-circuit-schematic.tbk".into(),
+            content: RC_CIRCUIT_SCHEMATIC.into(),
+        },
         BundledNotebook {
             filename: "rc-circuit.tbk".into(),
             content: RC_CIRCUIT.into(),

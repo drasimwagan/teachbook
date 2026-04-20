@@ -1,0 +1,128 @@
+---
+version: 0.1
+title: RC Circuit — Schematic and Charging
+subject: electronics
+author: Teachbook starter
+---
+
+# RC Circuit — Schematic View
+
+A companion to the `rc-circuit.tbk` plot-based view. Here we show the actual
+**schematic** — a 9 V battery, a 1 kΩ resistor, and a 1 mF capacitor in
+series. When the loop closes, current flows, the resistor drops voltage,
+and charge accumulates on the capacitor until it equals the battery EMF.
+
+$$
+V_0 = i R + V_C, \qquad V_C(t) = V_0 \left(1 - e^{-t/\tau}\right),
+\qquad \tau = RC = 1\ \text{s}
+$$
+
+At each step we highlight the element whose state is dominant in that
+moment.
+
+```text
+1. Switch closes. Capacitor is empty, voltage drop across R is maximum.
+2. Current decays as capacitor charges.
+3. V_C rises toward V0 = 9 V.
+4. After ~5τ, circuit is effectively at steady state.
+```
+
+## Circuit schematic + state
+
+```scene step=0 narration="t = 0. Battery provides 9 V. Switch just closed. Capacitor is empty — 0 V across it." code_lines=1
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"battery","from":[100,330],"to":[100,140],"label":"9 V"},
+    {"kind":"wire","from":[100,140],"to":[380,140]},
+    {"kind":"resistor","from":[380,140],"to":[380,260],"label":"R = 1 kΩ","highlight":true},
+    {"kind":"wire","from":[380,260],"to":[380,330]},
+    {"kind":"wire","from":[380,330],"to":[560,330]},
+    {"kind":"capacitor","from":[560,330],"to":[560,140]},
+    {"kind":"wire","from":[560,140],"to":[560,60]},
+    {"kind":"wire","from":[560,60],"to":[100,60]},
+    {"kind":"wire","from":[100,60],"to":[100,140]},
+    {"kind":"label","at":[620,245],"text":"V_C = 0 V"}
+  ]},
+  {"type":"label","id":"state","x":40,"y":440,"text":"I(0) = V_0 / R = 9\\ \\text{mA},\\quad V_C(0) = 0","latex":true}
+] }
+```
+
+```scene step=1 narration="t = 0.2 s. Current starts flowing through R; capacitor begins to charge. V_C ≈ 1.6 V already." code_lines=2
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"battery","from":[100,330],"to":[100,140],"label":"9 V"},
+    {"kind":"wire","from":[100,140],"to":[380,140]},
+    {"kind":"resistor","from":[380,140],"to":[380,260],"label":"R","highlight":true},
+    {"kind":"wire","from":[380,260],"to":[380,330]},
+    {"kind":"wire","from":[380,330],"to":[560,330]},
+    {"kind":"capacitor","from":[560,330],"to":[560,140],"label":"C"},
+    {"kind":"wire","from":[560,140],"to":[560,60]},
+    {"kind":"wire","from":[560,60],"to":[100,60]},
+    {"kind":"wire","from":[100,60],"to":[100,140]},
+    {"kind":"label","at":[620,245],"text":"V_C ≈ 1.6 V"}
+  ]},
+  {"type":"label","id":"state","x":40,"y":440,"text":"I(0.2) \\approx 7.4\\ \\text{mA},\\ V_C \\approx 1.63\\ \\text{V}","latex":true}
+] }
+```
+
+```scene step=2 narration="t = τ = 1 s. V_C = 63% of V0 = 5.69 V. Resistor and capacitor both dominant." code_lines=3
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"battery","from":[100,330],"to":[100,140],"label":"9 V"},
+    {"kind":"wire","from":[100,140],"to":[380,140]},
+    {"kind":"resistor","from":[380,140],"to":[380,260],"label":"R","highlight":true},
+    {"kind":"wire","from":[380,260],"to":[380,330]},
+    {"kind":"wire","from":[380,330],"to":[560,330]},
+    {"kind":"capacitor","from":[560,330],"to":[560,140],"label":"C","highlight":true},
+    {"kind":"wire","from":[560,140],"to":[560,60]},
+    {"kind":"wire","from":[560,60],"to":[100,60]},
+    {"kind":"wire","from":[100,60],"to":[100,140]},
+    {"kind":"label","at":[620,245],"text":"V_C = 5.69 V"}
+  ]},
+  {"type":"label","id":"state","x":40,"y":440,"text":"t = \\tau: V_C = V_0(1 - e^{-1}) \\approx 63\\%\\ V_0","latex":true}
+] }
+```
+
+```scene step=3 narration="t = 3τ = 3 s. V_C ≈ 8.55 V (95%). Current has nearly died down; capacitor dominant." code_lines=3
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"battery","from":[100,330],"to":[100,140],"label":"9 V"},
+    {"kind":"wire","from":[100,140],"to":[380,140]},
+    {"kind":"resistor","from":[380,140],"to":[380,260],"label":"R"},
+    {"kind":"wire","from":[380,260],"to":[380,330]},
+    {"kind":"wire","from":[380,330],"to":[560,330]},
+    {"kind":"capacitor","from":[560,330],"to":[560,140],"label":"C","highlight":true},
+    {"kind":"wire","from":[560,140],"to":[560,60]},
+    {"kind":"wire","from":[560,60],"to":[100,60]},
+    {"kind":"wire","from":[100,60],"to":[100,140]},
+    {"kind":"label","at":[620,245],"text":"V_C ≈ 8.55 V"}
+  ]},
+  {"type":"label","id":"state","x":40,"y":440,"text":"t = 3\\tau:\\ V_C \\approx 95\\%\\ V_0,\\ I \\approx 0.45\\ \\text{mA}","latex":true}
+] }
+```
+
+```scene step=4 narration="t = 5τ = 5 s. Circuit effectively at steady state. V_C ≈ V0, no current flows." code_lines=4
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"battery","from":[100,330],"to":[100,140],"label":"9 V"},
+    {"kind":"wire","from":[100,140],"to":[380,140]},
+    {"kind":"resistor","from":[380,140],"to":[380,260],"label":"R"},
+    {"kind":"wire","from":[380,260],"to":[380,330]},
+    {"kind":"wire","from":[380,330],"to":[560,330]},
+    {"kind":"capacitor","from":[560,330],"to":[560,140],"label":"C"},
+    {"kind":"wire","from":[560,140],"to":[560,60]},
+    {"kind":"wire","from":[560,60],"to":[100,60]},
+    {"kind":"wire","from":[100,60],"to":[100,140]},
+    {"kind":"label","at":[620,245],"text":"V_C ≈ 8.94 V"}
+  ]},
+  {"type":"label","id":"state","x":40,"y":440,"text":"Steady state:\\ V_C \\to V_0,\\ I \\to 0","latex":true}
+] }
+```
+
+## Quiz
+
+?? At steady state the capacitor acts like what kind of circuit element?
+>> An open circuit. With no changing voltage, $I = C\,dV/dt = 0$. No current flows, no voltage is dropped across R, and all 9 V appear across the capacitor.
+
+?? If we replaced the capacitor with an inductor of the same reactance, what would the roles of the two elements be during the transient?
+>> Reversed. At $t = 0$ the inductor opposes any sudden change in current (acting briefly like an *open* circuit — $V_L = L\,dI/dt$ is large), so the initial current is near zero. Over time, current builds up and the inductor settles to a short (no voltage drop). The time constant is $\tau = L/R$ instead of $RC$.

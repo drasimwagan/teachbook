@@ -8,6 +8,7 @@
  */
 
 import { moleculePlugin } from "./chemistry/molecule";
+import { circuitPlugin } from "./electronics/circuit";
 import { heatmapPlugin } from "./ml/heatmap";
 import { neuralNetworkPlugin } from "./ml/neural-network";
 import { blochPlugin } from "./quantum/bloch";
@@ -16,6 +17,7 @@ import type { TeachbookPlugin } from "./types";
 
 export const allPlugins: TeachbookPlugin[] = [
   moleculePlugin,
+  circuitPlugin,
   neuralNetworkPlugin,
   heatmapPlugin,
   blochPlugin,

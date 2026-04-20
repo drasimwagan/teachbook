@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux deps
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check frontend
+        run: pnpm build
+
+      - name: Check Rust
+        run: cargo check --manifest-path src-tauri/Cargo.toml
+
+      - name: Validate notebook scene JSON
+        run: |
+          node --input-type=module -e '
+            import { readFileSync, readdirSync } from "node:fs";
+            import { join } from "node:path";
+            let failed = 0;
+            for (const f of readdirSync("notebooks").filter(n => n.endsWith(".tbk"))) {
+              const src = readFileSync(join("notebooks", f), "utf8");
+              const re = /```scene[^\n]*\n([\s\S]*?)\n```/g;
+              let m, n = 0;
+              while ((m = re.exec(src))) {
+                n++;
+                try { JSON.parse(m[1]); } catch (e) { failed++; console.log("! " + f + " scene " + n + ": " + e.message); }
+              }
+              console.log(f + ": " + n + " scenes");
+            }
+            process.exit(failed ? 1 : 0);
+          '
