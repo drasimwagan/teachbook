@@ -94,15 +94,33 @@ function Primitive({ p, axes }: { p: ScenePrimitive; axes: AxisCtx }) {
 
 function Grid({ p }: { p: GridPrimitive }) {
   const highlight = new Set(p.highlight ?? []);
-  const cell = 60;
-  const startX = VIEW_W / 2 - (p.values.length * cell) / 2;
+  const cell = p.cellSize ?? 60;
+  const defaultX = VIEW_W / 2 - (p.values.length * cell) / 2;
+  const defaultY = VIEW_H / 2 - cell / 2;
+  const startX = p.x ?? defaultX;
+  const gridY = p.y ?? defaultY;
+  const textSize = Math.max(10, Math.round(cell * 0.35));
+  const gap = Math.max(2, Math.round(cell * 0.08));
+  const inner = cell - gap;
   return (
     <g>
+      {p.label && (
+        <text
+          x={startX}
+          y={gridY - cell * 0.36}
+          fontSize={12}
+          fontWeight={600}
+          fill="currentColor"
+          className="text-zinc-700 dark:text-zinc-300"
+        >
+          {p.label}
+        </text>
+      )}
       {p.values.map((v, i) => (
-        <g key={i} transform={`translate(${startX + i * cell}, ${VIEW_H / 2 - 30})`}>
+        <g key={i} transform={`translate(${startX + i * cell}, ${gridY})`}>
           <motion.rect
-            width={cell - 4}
-            height={cell - 4}
+            width={inner}
+            height={inner}
             rx={4}
             stroke="#52525b"
             strokeWidth={1}
@@ -110,19 +128,19 @@ function Grid({ p }: { p: GridPrimitive }) {
             transition={TWEEN}
           />
           <text
-            x={(cell - 4) / 2}
-            y={(cell - 4) / 2 + 6}
+            x={inner / 2}
+            y={inner / 2 + textSize * 0.35}
             textAnchor="middle"
-            fontSize={20}
+            fontSize={textSize}
             fill="#18181b"
           >
             {String(v)}
           </text>
           <text
-            x={(cell - 4) / 2}
-            y={-6}
+            x={inner / 2}
+            y={-4}
             textAnchor="middle"
-            fontSize={10}
+            fontSize={Math.max(9, Math.round(cell * 0.16))}
             fill="#71717a"
           >
             {i}

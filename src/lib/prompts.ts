@@ -17,7 +17,12 @@ export const TBK_FORMAT_GUIDE = `You generate Teachbook notebooks (.tbk files). 
    >> rubric / expected answer
 
 Scene primitive types (pick those that fit; all have type=<name>):
-- grid: { type: "grid", values: [...], highlight?: [indices] }
+- grid: { type: "grid", values: [...], highlight?: [indices], x?, y?, cellSize?, label? }
+  // Default: one grid per scene, auto-centered. For algorithm traces that
+  // need multiple arrays (e.g. left/right/result in merge sort), set x/y for
+  // each grid explicitly and use cellSize around 36-40 so they fit. Use the
+  // "label" field to name the array (e.g. "left", "result"). Use "_" or
+  // similar placeholder strings for empty slots in a growing result array.
 - shape: { type: "shape", id?, shape: "circle"|"rect"|"polygon", x, y, radius?, width?, height?, fill?, stroke? }
 - arrow: { type: "arrow", id?, from: [x, y], to: [x, y], label? }
 - label: { type: "label", id?, x, y, text, latex? }
@@ -44,6 +49,16 @@ IMPORTANT — animation via stable ids:
 
 code_lines is 1-indexed and relative to the cell's code block (not the source file).
 Use it on EVERY scene block so students see the debugger-style line highlight.
+
+Execution-trace discipline (important for algorithm notebooks):
+- code_lines on step N+1 must logically follow code_lines on step N.
+  Jumping from a base-case line straight to deep inside a helper function
+  without intermediate steps leaves students guessing how we got there.
+- Show every non-trivial intermediate variable (pointers, accumulators,
+  result arrays) explicitly, usually as their own primitive or label. Don't
+  describe "after the swap" in narration when the swap itself wasn't shown.
+- If you skip a phase for brevity (e.g. recursion), say so in the prose
+  BEFORE the scene steps, not by silently jumping code_lines.
 
 Quality bar:
 - 4-8 scene steps per concept, each with a clear narration.

@@ -2,6 +2,18 @@ export type GridPrimitive = {
   type: "grid";
   values: (string | number)[];
   highlight?: number[];
+  /** Stable id for React keying (optional). Not used for tween since the grid
+   *  composes many cells; identity is managed per-cell via positional keys. */
+  id?: string;
+  /** Left edge of the grid in viewBox space. Default: centered horizontally. */
+  x?: number;
+  /** Top edge of the grid in viewBox space. Default: vertically centered. */
+  y?: number;
+  /** Cell edge size in pixels. Default 60. Use smaller values (e.g. 36) when
+   *  multiple grids need to coexist in one scene. */
+  cellSize?: number;
+  /** Optional label rendered above the grid (e.g. "left", "result"). */
+  label?: string;
 };
 
 export type ShapePrimitive = {
