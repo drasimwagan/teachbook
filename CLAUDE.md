@@ -45,12 +45,32 @@ them symmetric: parse(serialize(nb)) === nb for round-trip safety.
 
 ### Scene primitives (the extension point)
 Visual domain-generality lives in `src/components/SceneRenderer.tsx`. The
-8 core primitives — `grid`, `shape`, `arrow`, `label`, `axes`, `plot`, `graph`, and
-highlights via color state — cover ~80% of step-by-step teaching across fields.
+core primitives cover ~80% of step-by-step teaching:
 
-To add a primitive: extend `ScenePrimitive` in `src/types.ts` and add a branch
-in `SceneRenderer.tsx`. Plugins (chemistry molecules, circuits, ray optics) will
-register primitives at runtime — that API isn't designed yet.
+- `grid` — 1D array (positionable since round 2)
+- `matrix` — 2D table (DP, Punnett squares, confusion matrices)
+- `shape` / `arrow` / `label` — basic SVG primitives with optional `id` for tweening
+- `axes` / `plot` — coordinate systems and line/scatter plots
+- `graph` — weighted directed/undirected graphs with node+edge highlighting
+
+Add a new core primitive: extend `ScenePrimitive` in `src/types.ts` and add a
+branch in `SceneRenderer.tsx`.
+
+### Plugin system (domain-specific primitives)
+Contributor-written plugins live under `src/plugins/<category>/<name>.tsx` and
+register at compile time via `src/plugins/index.ts`. See
+[`docs/PLUGIN_AUTHORING.md`](docs/PLUGIN_AUTHORING.md) for the full walkthrough.
+
+- First shipped plugin: `molecule` (chemistry) — see
+  `src/plugins/chemistry/molecule.tsx`.
+- The scene renderer falls through to the plugin registry for any unknown
+  primitive type (`SceneRenderer.tsx` default case).
+- Every registered plugin's `schemaDoc` is auto-appended to `TBK_FORMAT_GUIDE`
+  in `src/lib/prompts.ts`, so Generate and Add-step produce valid JSON for
+  plugin primitives without any extra prompt engineering.
+
+Security model: all plugins are checked into this repo. We deliberately don't
+support runtime loading of external plugins — zero untrusted code execution.
 
 ### Frontend ↔ Rust boundary
 Rust (`src-tauri/src/lib.rs`) owns:

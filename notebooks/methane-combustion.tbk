@@ -1,0 +1,179 @@
+---
+version: 0.1
+title: Combustion of Methane
+subject: chemistry
+author: Teachbook starter
+---
+
+# Combustion of Methane
+
+Methane ($\text{CH}_4$) burns in oxygen to produce carbon dioxide and water,
+releasing about 890 kJ/mol — the reaction that powers natural-gas stoves,
+furnaces, and many power plants:
+
+$$
+\text{CH}_4 + 2\,\text{O}_2 \ \longrightarrow\ \text{CO}_2 + 2\,\text{H}_2\text{O}
+$$
+
+This notebook uses the **molecule** plugin (chemistry domain) to visualize
+each species on both sides of the equation, and walks through balancing by
+atom count.
+
+```text
+1. Write the unbalanced skeleton:
+     CH4 + O2 → CO2 + H2O
+
+2. Count atoms on each side
+     Left  : C = 1, H = 4, O = 2
+     Right : C = 1, H = 2, O = 3
+
+3. Balance hydrogens by placing a 2 in front of H2O:
+     CH4 + O2 → CO2 + 2 H2O
+     Right now: C = 1, H = 4, O = 4
+
+4. Balance oxygens by placing a 2 in front of O2:
+     CH4 + 2 O2 → CO2 + 2 H2O
+     Both sides: C = 1, H = 4, O = 4  ✓
+
+5. All atoms conserved — equation is balanced.
+   ΔH = -890 kJ/mol (exothermic).
+```
+
+## Walking through the reaction
+
+```scene step=0 narration="Methane: one carbon bonded to four hydrogens — a tetrahedral shape shown flat here." code_lines=1-2
+{ "primitives": [
+  {"type":"label","id":"title","x":60,"y":60,"text":"Reactant: CH_4","latex":true},
+  {"type":"molecule","atoms":[
+    {"id":"c","element":"C","x":0,"y":0},
+    {"id":"h1","element":"H","x":-1.4,"y":-1.0},
+    {"id":"h2","element":"H","x":1.4,"y":-1.0},
+    {"id":"h3","element":"H","x":-1.4,"y":1.0},
+    {"id":"h4","element":"H","x":1.4,"y":1.0}
+  ],"bonds":[
+    {"from":"c","to":"h1"},
+    {"from":"c","to":"h2"},
+    {"from":"c","to":"h3"},
+    {"from":"c","to":"h4"}
+  ],"scale":48}
+] }
+```
+
+```scene step=1 narration="Oxygen molecule: two oxygens joined by a double bond. Two molecules of O₂ are needed." code_lines=1-2
+{ "primitives": [
+  {"type":"label","id":"title","x":60,"y":60,"text":"Reactant: 2\\ \\text{O}_2","latex":true},
+  {"type":"molecule","atoms":[
+    {"id":"o1","element":"O","x":-1,"y":-1.3},
+    {"id":"o2","element":"O","x":1,"y":-1.3}
+  ],"bonds":[
+    {"from":"o1","to":"o2","order":2}
+  ],"scale":48,"ox":400,"oy":160},
+  {"type":"molecule","atoms":[
+    {"id":"o3","element":"O","x":-1,"y":1.3},
+    {"id":"o4","element":"O","x":1,"y":1.3}
+  ],"bonds":[
+    {"from":"o3","to":"o4","order":2}
+  ],"scale":48,"ox":400,"oy":340}
+] }
+```
+
+```scene step=2 narration="Unbalanced skeleton: CH₄ + O₂ → CO₂ + H₂O. Count atoms. Hydrogens (4 vs 2) are off." code_lines=4-6
+{ "primitives": [
+  {"type":"label","id":"eq","x":40,"y":60,"text":"\\text{CH}_4 + \\text{O}_2 \\rightarrow \\text{CO}_2 + \\text{H}_2\\text{O}","latex":true},
+  {"type":"label","id":"left","x":40,"y":110,"text":"Left:\\ \\text{C}=1,\\ \\text{H}=4,\\ \\text{O}=2","latex":true},
+  {"type":"label","id":"right","x":40,"y":150,"text":"Right:\\ \\text{C}=1,\\ \\text{H}=2,\\ \\text{O}=3","latex":true},
+  {"type":"label","id":"problem","x":40,"y":200,"text":"H\\text{ and }O\\text{ don't match yet.}","latex":true}
+] }
+```
+
+```scene step=3 narration="Put a 2 in front of H₂O. That balances hydrogens (4 on each side). But oxygens go to 4 on the right, still 2 on the left." code_lines=8-10
+{ "primitives": [
+  {"type":"label","id":"eq","x":40,"y":60,"text":"\\text{CH}_4 + \\text{O}_2 \\rightarrow \\text{CO}_2 + 2\\,\\text{H}_2\\text{O}","latex":true},
+  {"type":"label","id":"right","x":40,"y":150,"text":"Right:\\ \\text{C}=1,\\ \\text{H}=4,\\ \\text{O}=4","latex":true},
+  {"type":"label","id":"left","x":40,"y":110,"text":"Left:\\ \\text{C}=1,\\ \\text{H}=4,\\ \\text{O}=2","latex":true},
+  {"type":"label","id":"problem","x":40,"y":200,"text":"O\\text{ still off: need 4 on the left too.}","latex":true}
+] }
+```
+
+```scene step=4 narration="Put a 2 in front of O₂. Now 2 × 2 = 4 oxygens on the left. Equation balanced." code_lines=12-14
+{ "primitives": [
+  {"type":"label","id":"eq","x":40,"y":60,"text":"\\text{CH}_4 + 2\\,\\text{O}_2 \\rightarrow \\text{CO}_2 + 2\\,\\text{H}_2\\text{O}","latex":true},
+  {"type":"label","id":"left","x":40,"y":110,"text":"Left:\\ \\text{C}=1,\\ \\text{H}=4,\\ \\text{O}=4","latex":true},
+  {"type":"label","id":"right","x":40,"y":150,"text":"Right:\\ \\text{C}=1,\\ \\text{H}=4,\\ \\text{O}=4","latex":true},
+  {"type":"label","id":"ok","x":40,"y":200,"text":"\\checkmark\\ \\text{balanced}","latex":true}
+] }
+```
+
+```scene step=5 narration="Product 1: Carbon dioxide. Linear molecule, two C=O double bonds." code_lines=12
+{ "primitives": [
+  {"type":"label","id":"title","x":60,"y":60,"text":"Product: \\text{CO}_2","latex":true},
+  {"type":"molecule","atoms":[
+    {"id":"o1","element":"O","x":-2.2,"y":0},
+    {"id":"c","element":"C","x":0,"y":0},
+    {"id":"o2","element":"O","x":2.2,"y":0}
+  ],"bonds":[
+    {"from":"o1","to":"c","order":2},
+    {"from":"c","to":"o2","order":2}
+  ],"scale":48}
+] }
+```
+
+```scene step=6 narration="Product 2: Water. Bent molecule — two O-H single bonds at roughly 104.5°. Two molecules produced." code_lines=12
+{ "primitives": [
+  {"type":"label","id":"title","x":60,"y":60,"text":"Product: 2\\,\\text{H}_2\\text{O}","latex":true},
+  {"type":"molecule","atoms":[
+    {"id":"o","element":"O","x":0,"y":0},
+    {"id":"h1","element":"H","x":-1.1,"y":-1.1},
+    {"id":"h2","element":"H","x":1.1,"y":-1.1}
+  ],"bonds":[
+    {"from":"o","to":"h1"},
+    {"from":"o","to":"h2"}
+  ],"scale":48,"ox":300,"oy":250},
+  {"type":"molecule","atoms":[
+    {"id":"o2","element":"O","x":0,"y":0},
+    {"id":"h3","element":"H","x":-1.1,"y":-1.1},
+    {"id":"h4","element":"H","x":1.1,"y":-1.1}
+  ],"bonds":[
+    {"from":"o2","to":"h3"},
+    {"from":"o2","to":"h4"}
+  ],"scale":48,"ox":500,"oy":250}
+] }
+```
+
+```scene step=7 narration="Recap: one CH₄ plus two O₂ yields one CO₂ plus two H₂O. Atoms conserved; bonds in hydrocarbon + O=O are replaced by stronger C=O and O-H bonds, releasing ~890 kJ/mol." code_lines=14-15
+{ "primitives": [
+  {"type":"label","id":"eq","x":80,"y":60,"text":"\\text{CH}_4 + 2\\,\\text{O}_2 \\ \\longrightarrow\\ \\text{CO}_2 + 2\\,\\text{H}_2\\text{O}","latex":true},
+  {"type":"molecule","atoms":[
+    {"id":"c","element":"C","x":0,"y":0},
+    {"id":"h1","element":"H","x":-1.0,"y":-1.0},
+    {"id":"h2","element":"H","x":1.0,"y":-1.0},
+    {"id":"h3","element":"H","x":-1.0,"y":1.0},
+    {"id":"h4","element":"H","x":1.0,"y":1.0}
+  ],"bonds":[
+    {"from":"c","to":"h1"},{"from":"c","to":"h2"},{"from":"c","to":"h3"},{"from":"c","to":"h4"}
+  ],"scale":36,"ox":140,"oy":230},
+  {"type":"label","id":"arrow","x":340,"y":240,"text":"\\longrightarrow","latex":true},
+  {"type":"molecule","atoms":[
+    {"id":"o1","element":"O","x":-1.5,"y":0},
+    {"id":"c2","element":"C","x":0,"y":0},
+    {"id":"o2","element":"O","x":1.5,"y":0}
+  ],"bonds":[
+    {"from":"o1","to":"c2","order":2},{"from":"c2","to":"o2","order":2}
+  ],"scale":36,"ox":540,"oy":180},
+  {"type":"label","id":"plus","x":540,"y":270,"text":"+","latex":false},
+  {"type":"molecule","atoms":[
+    {"id":"oa","element":"O","x":0,"y":0},
+    {"id":"ha","element":"H","x":-0.9,"y":-0.9},
+    {"id":"hb","element":"H","x":0.9,"y":-0.9}
+  ],"bonds":[{"from":"oa","to":"ha"},{"from":"oa","to":"hb"}],"scale":30,"ox":640,"oy":280},
+  {"type":"label","id":"energy","x":80,"y":400,"text":"\\Delta H = -890\\ \\text{kJ/mol}\\ \\text{(exothermic)}","latex":true}
+] }
+```
+
+## Quiz
+
+?? The equation $\text{CH}_4 + 2\,\text{O}_2 \rightarrow \text{CO}_2 + 2\,\text{H}_2\text{O}$ is balanced for atoms. What else must be conserved, and how can we check it here?
+>> Charge. Every species in this reaction is neutral, so net charge is zero on both sides — automatically balanced. For ionic reactions we'd need to sum up ionic charges on both sides and verify they match.
+
+?? Why is combustion exothermic — where does the 890 kJ/mol of energy come from?
+>> Bond energies. The C-H bonds in methane (~413 kJ/mol each × 4) and the O=O bond in oxygen (~498 kJ/mol × 2) are weaker than the bonds formed: C=O (~799 kJ/mol × 2) and O-H (~463 kJ/mol × 4). Net result: less energy stored in bonds on the product side, released as heat.

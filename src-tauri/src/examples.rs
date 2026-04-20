@@ -16,6 +16,7 @@ const MITOSIS: &str = include_str!("../../notebooks/mitosis.tbk");
 const RC_CIRCUIT: &str = include_str!("../../notebooks/rc-circuit.tbk");
 const DIJKSTRA: &str = include_str!("../../notebooks/dijkstra.tbk");
 const LCS_DP: &str = include_str!("../../notebooks/lcs-dp.tbk");
+const METHANE_COMBUSTION: &str = include_str!("../../notebooks/methane-combustion.tbk");
 
 #[tauri::command]
 pub fn list_bundled_notebooks() -> Vec<BundledNotebook> {
@@ -58,6 +59,11 @@ pub fn list_bundled_notebooks() -> Vec<BundledNotebook> {
         BundledNotebook {
             filename: "mitosis.tbk".into(),
             content: MITOSIS.into(),
+        },
+        // Chemistry (uses molecule plugin)
+        BundledNotebook {
+            filename: "methane-combustion.tbk".into(),
+            content: METHANE_COMBUSTION.into(),
         },
         // Electronics
         BundledNotebook {

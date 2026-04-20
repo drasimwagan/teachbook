@@ -1,5 +1,8 @@
 import { lazy, Suspense } from "react";
 import { motion } from "framer-motion";
+import { getPlugin } from "../plugins";
+// Side-effect import so plugins self-register on first load.
+import "../plugins";
 import type {
   ArrowPrimitive,
   AxesPrimitive,
@@ -87,12 +90,23 @@ function Primitive({ p, axes }: { p: ScenePrimitive; axes: AxisCtx }) {
       return <Graph p={p} />;
     case "matrix":
       return <Matrix p={p} />;
-    default:
+    default: {
+      // Fall through to plugin registry for extensible domains.
+      const plugin = getPlugin(p.type);
+      if (plugin) {
+        return plugin.render(p as { type: string; [k: string]: unknown }, {
+          axes,
+          viewW: VIEW_W,
+          viewH: VIEW_H,
+          project: (x: number, y: number) => project(axes, x, y),
+        });
+      }
       return (
         <text x={10} y={20} fontSize={12} fill="#b91c1c">
           unknown primitive: {String(p.type)}
         </text>
       );
+    }
   }
 }
 

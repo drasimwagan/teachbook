@@ -2,9 +2,17 @@
  * Single source of truth for prompts Claude needs to generate or edit .tbk
  * notebooks. If the format changes, update this file AND the example notebooks
  * AND docs/PLAN.md in the same commit.
+ *
+ * TBK_FORMAT_GUIDE is dynamically assembled from CORE_GUIDE + every registered
+ * plugin's schemaDoc (see src/plugins). Accessing it as a getter ensures any
+ * plugin that registers after module load is still reflected — but in
+ * practice all plugins register eagerly in src/plugins/index.ts, so this is
+ * also safe to read once at startup.
  */
 
-export const TBK_FORMAT_GUIDE = `You generate Teachbook notebooks (.tbk files). A .tbk file is Markdown with:
+import { listPlugins } from "../plugins";
+
+const CORE_GUIDE = `You generate Teachbook notebooks (.tbk files). A .tbk file is Markdown with:
 
 1. YAML frontmatter: title, subject, author, version (0.1)
 2. Prose (Markdown) explaining the concept. Supports LaTeX: inline $...$ and block $$...$$.
@@ -87,6 +95,38 @@ Quality bar:
 - Respond with ONLY the .tbk file contents. Start with --- and end with the last char.
   Do NOT wrap your response in \`\`\`markdown fences.
 `;
+
+function pluginsGuideSection(): string {
+  const plugins = listPlugins();
+  if (plugins.length === 0) return "";
+  const byCategory = new Map<string, typeof plugins>();
+  for (const p of plugins) {
+    const arr = byCategory.get(p.category) ?? [];
+    arr.push(p);
+    byCategory.set(p.category, arr);
+  }
+  const sections: string[] = [
+    "",
+    "DOMAIN PLUGIN PRIMITIVES (use these when the subject fits):",
+    "",
+  ];
+  for (const [cat, list] of byCategory) {
+    sections.push(`[${cat}]`);
+    for (const p of list) {
+      sections.push(`- ${p.schemaDoc}`);
+      sections.push(`  ${p.description}`);
+    }
+    sections.push("");
+  }
+  return sections.join("\n");
+}
+
+/**
+ * Assembled format guide — core rules plus every registered plugin's schemaDoc.
+ * Read at prompt-build time so new plugins automatically teach Claude their
+ * primitive shape without touching this file.
+ */
+export const TBK_FORMAT_GUIDE: string = CORE_GUIDE + pluginsGuideSection();
 
 /** Strip outer markdown fences Claude sometimes wraps around its response. */
 export function stripOuterFence(s: string): string {
