@@ -1,6 +1,10 @@
+import { lazy, Suspense } from "react";
 import type { Cell, Notebook, Scene, Step } from "../types";
 import SceneRenderer from "./SceneRenderer";
-import CodeStepView from "./CodeStepView";
+
+// CodeStepView pulls @codemirror/lang-python + @codemirror/lang-javascript.
+// Lazy-load so notebooks without a code block skip the cost entirely.
+const CodeStepView = lazy(() => import("./CodeStepView"));
 
 type Props = {
   notebook: Notebook | null;
@@ -66,12 +70,14 @@ export default function VisualizationPane({
         {/* Code step — takes bottom half when present */}
         {hasCode && (
           <div className="basis-1/2 flex-1 min-h-0 flex flex-col">
-            <CodeStepView
-              code={code}
-              codeLang={codeLang}
-              highlight={codeLines}
-              stepNumber={currentStep + 1}
-            />
+            <Suspense fallback={<div className="p-3 text-xs text-zinc-400">Loading code view…</div>}>
+              <CodeStepView
+                code={code}
+                codeLang={codeLang}
+                highlight={codeLines}
+                stepNumber={currentStep + 1}
+              />
+            </Suspense>
           </div>
         )}
       </div>

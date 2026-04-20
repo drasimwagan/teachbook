@@ -1,6 +1,5 @@
-import { useMemo } from "react";
+import { lazy, Suspense } from "react";
 import { motion } from "framer-motion";
-import katex from "katex";
 import type {
   ArrowPrimitive,
   AxesPrimitive,
@@ -12,6 +11,10 @@ import type {
   ScenePrimitive,
   ShapePrimitive,
 } from "../types";
+
+// katex + its CSS weigh ~150KB gzip. Only pay for it when a scene actually
+// has `latex: true` labels.
+const MathLabel = lazy(() => import("./MathLabel"));
 
 type Props = { scene: Scene };
 
@@ -197,32 +200,22 @@ function Arrow({ p, axes }: { p: ArrowPrimitive; axes: AxisCtx }) {
 function Label({ p, axes }: { p: LabelPrimitive; axes: AxisCtx }) {
   const [x, y] = project(axes, p.x, p.y);
 
-  const html = useMemo(() => {
-    if (!p.latex) return null;
-    try {
-      return katex.renderToString(p.text, {
-        throwOnError: false,
-        displayMode: false,
-      });
-    } catch {
-      return null;
-    }
-  }, [p.text, p.latex]);
-
-  if (p.latex && html) {
+  if (p.latex) {
     return (
-      <motion.foreignObject
-        animate={{ x: x - 4, y: y - 18 }}
-        transition={TWEEN}
-        width={260}
-        height={36}
-        style={{ overflow: "visible" }}
+      <Suspense
+        fallback={
+          <motion.text
+            animate={{ x, y }}
+            transition={TWEEN}
+            fontSize={14}
+            fill="currentColor"
+          >
+            {p.text}
+          </motion.text>
+        }
       >
-        <div
-          style={{ fontSize: "15px", color: "currentColor", whiteSpace: "nowrap" }}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
-      </motion.foreignObject>
+        <MathLabel text={p.text} x={x} y={y} />
+      </Suspense>
     );
   }
 

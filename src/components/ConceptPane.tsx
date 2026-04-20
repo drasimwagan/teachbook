@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { oneDark } from "@codemirror/theme-one-dark";
@@ -8,8 +8,11 @@ import {
   sceneHighlightTheme,
   setHighlightRangeEffect,
 } from "../lib/cm-line-highlight";
-import ConceptReadView from "./ConceptReadView";
 import type { Notebook } from "../types";
+
+// ConceptReadView pulls react-markdown + remark-math + rehype-katex + katex
+// (~150KB gzip). Lazy-load so first paint doesn't pay for it.
+const ConceptReadView = lazy(() => import("./ConceptReadView"));
 
 type Mode = "read" | "edit";
 
@@ -125,11 +128,17 @@ export default function ConceptPane({
             }}
           />
         ) : (
-          <ConceptReadView
-            notebook={notebook}
-            currentStep={currentStep}
-            onStepSelect={onStepSelect}
-          />
+          <Suspense
+            fallback={
+              <div className="p-4 text-sm text-zinc-400">Loading reader…</div>
+            }
+          >
+            <ConceptReadView
+              notebook={notebook}
+              currentStep={currentStep}
+              onStepSelect={onStepSelect}
+            />
+          </Suspense>
         )}
       </div>
 
