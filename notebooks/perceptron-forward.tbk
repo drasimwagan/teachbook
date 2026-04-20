@@ -1,0 +1,151 @@
+---
+version: 0.1
+title: Neural Network Forward Pass
+subject: machine-learning
+author: Teachbook starter
+---
+
+# Forward Pass Through a 2-3-1 Network
+
+This is the smallest network that can solve XOR-style problems: two input
+neurons, a hidden layer of three, and one output. Every neuron in layer $L+1$
+is a weighted sum of the neurons in layer $L$, passed through a nonlinear
+**activation function** — we'll use $\tanh$ (range $[-1, 1]$).
+
+$$
+z^{(L+1)}_j = \sum_i w^{(L+1)}_{ji} \cdot a^{(L)}_i + b^{(L+1)}_j
+\qquad
+a^{(L+1)}_j = \tanh(z^{(L+1)}_j)
+$$
+
+Weights and biases for this demo (fixed, not learned):
+
+- Input → Hidden:
+  $W^{(1)} = \begin{pmatrix} 1.0 & -0.5 \\ 0.8 & 0.6 \\ -0.4 & 0.9 \end{pmatrix}$,
+  $b^{(1)} = (0.1,\ -0.2,\ 0.3)$
+- Hidden → Output: $W^{(2)} = (0.7,\ -0.3,\ 0.5)$, $b^{(2)} = 0.0$
+
+Input for this trace: $x = (0.8,\ -0.4)$.
+
+```text
+Step 0: Initialize. Layer 0 activations = input x.
+
+Step 1: Compute z^(1)_1 = 1.0*0.8 + (-0.5)*(-0.4) + 0.1 = 1.10
+        a^(1)_1 = tanh(1.10) = 0.80
+
+Step 2: Compute z^(1)_2 = 0.8*0.8 + 0.6*(-0.4) + (-0.2) = 0.20
+        a^(1)_2 = tanh(0.20) = 0.20
+
+Step 3: Compute z^(1)_3 = (-0.4)*0.8 + 0.9*(-0.4) + 0.3 = -0.38
+        a^(1)_3 = tanh(-0.38) = -0.36
+
+Step 4: Compute z^(2) = 0.7*0.80 + (-0.3)*0.20 + 0.5*(-0.36) + 0.0 = 0.32
+        a^(2) = tanh(0.32) = 0.31
+
+Output: 0.31
+```
+
+## Walking through the forward pass
+
+```scene step=0 narration="The network — 2 inputs, 3 hidden, 1 output. Gray = no activation assigned yet." code_lines=1
+{ "primitives": [
+  {"type":"nn","x":100,"y":90,"width":600,"height":320,"label":"2-3-1 feed-forward net",
+   "layers":[
+     {"size":2,"label":"input"},
+     {"size":3,"label":"hidden (tanh)"},
+     {"size":1,"label":"output (tanh)"}
+   ]}
+] }
+```
+
+```scene step=1 narration="Feed the input: layer 0 activations = x = (0.8, -0.4). Input neurons light up — blue for positive, red for negative." code_lines=1
+{ "primitives": [
+  {"type":"nn","x":100,"y":90,"width":600,"height":320,"label":"Input fed: x = (0.8, -0.4)",
+   "layers":[
+     {"size":2,"label":"input","activations":[0.8,-0.4]},
+     {"size":3,"label":"hidden"},
+     {"size":1,"label":"output"}
+   ],
+   "highlightNeurons":[[0,0],[0,1]]}
+] }
+```
+
+```scene step=2 narration="Compute hidden neuron 0: z = 1.0·0.8 + (-0.5)·(-0.4) + 0.1 = 1.10. a = tanh(1.10) = 0.80. Relevant edges highlighted with their weights." code_lines=3-4
+{ "primitives": [
+  {"type":"nn","x":100,"y":90,"width":600,"height":320,
+   "layers":[
+     {"size":2,"label":"input","activations":[0.8,-0.4]},
+     {"size":3,"label":"hidden","activations":[0.80,0,0]},
+     {"size":1,"label":"output"}
+   ],
+   "weights":[[[1.0,-0.5],[0.8,0.6],[-0.4,0.9]],[[0.7,-0.3,0.5]]],
+   "highlightEdges":[[0,0,1,0],[0,1,1,0]],
+   "highlightNeurons":[[1,0]]},
+  {"type":"label","id":"calc","x":80,"y":440,"text":"z_1 = 1.0(0.8) + (-0.5)(-0.4) + 0.1 = 1.10,\\ a_1 = \\tanh(1.10) = 0.80","latex":true}
+] }
+```
+
+```scene step=3 narration="Hidden neuron 1: z = 0.8·0.8 + 0.6·(-0.4) + (-0.2) = 0.20. a = tanh(0.20) = 0.20. Light blue." code_lines=6-7
+{ "primitives": [
+  {"type":"nn","x":100,"y":90,"width":600,"height":320,
+   "layers":[
+     {"size":2,"label":"input","activations":[0.8,-0.4]},
+     {"size":3,"label":"hidden","activations":[0.80,0.20,0]},
+     {"size":1,"label":"output"}
+   ],
+   "weights":[[[1.0,-0.5],[0.8,0.6],[-0.4,0.9]],[[0.7,-0.3,0.5]]],
+   "highlightEdges":[[0,0,1,1],[0,1,1,1]],
+   "highlightNeurons":[[1,1]]},
+  {"type":"label","id":"calc","x":80,"y":440,"text":"z_2 = 0.8(0.8) + 0.6(-0.4) + (-0.2) = 0.20,\\ a_2 = \\tanh(0.20) = 0.20","latex":true}
+] }
+```
+
+```scene step=4 narration="Hidden neuron 2: z = -0.4·0.8 + 0.9·(-0.4) + 0.3 = -0.38. a = tanh(-0.38) = -0.36. Light red (negative)." code_lines=9-10
+{ "primitives": [
+  {"type":"nn","x":100,"y":90,"width":600,"height":320,
+   "layers":[
+     {"size":2,"label":"input","activations":[0.8,-0.4]},
+     {"size":3,"label":"hidden","activations":[0.80,0.20,-0.36]},
+     {"size":1,"label":"output"}
+   ],
+   "weights":[[[1.0,-0.5],[0.8,0.6],[-0.4,0.9]],[[0.7,-0.3,0.5]]],
+   "highlightEdges":[[0,0,1,2],[0,1,1,2]],
+   "highlightNeurons":[[1,2]]},
+  {"type":"label","id":"calc","x":80,"y":440,"text":"z_3 = -0.4(0.8) + 0.9(-0.4) + 0.3 = -0.38,\\ a_3 = \\tanh(-0.38) = -0.36","latex":true}
+] }
+```
+
+```scene step=5 narration="All hidden activations computed. Now flow into the output neuron: combine via W^(2) = (0.7, -0.3, 0.5)." code_lines=12-13
+{ "primitives": [
+  {"type":"nn","x":100,"y":90,"width":600,"height":320,
+   "layers":[
+     {"size":2,"label":"input","activations":[0.8,-0.4]},
+     {"size":3,"label":"hidden","activations":[0.80,0.20,-0.36]},
+     {"size":1,"label":"output"}
+   ],
+   "weights":[[[1.0,-0.5],[0.8,0.6],[-0.4,0.9]],[[0.7,-0.3,0.5]]],
+   "highlightEdges":[[1,0,2,0],[1,1,2,0],[1,2,2,0]],
+   "highlightNeurons":[[2,0]]},
+  {"type":"label","id":"calc","x":80,"y":440,"text":"z^{(2)} = 0.7(0.80) + (-0.3)(0.20) + 0.5(-0.36) + 0.0 = 0.32","latex":true}
+] }
+```
+
+```scene step=6 narration="Apply tanh to the output pre-activation. Final prediction: a^(2) = tanh(0.32) = 0.31." code_lines=13
+{ "primitives": [
+  {"type":"nn","x":100,"y":90,"width":600,"height":320,"label":"Forward pass complete",
+   "layers":[
+     {"size":2,"label":"input","activations":[0.8,-0.4]},
+     {"size":3,"label":"hidden","activations":[0.80,0.20,-0.36]},
+     {"size":1,"label":"output","activations":[0.31]}
+   ]},
+  {"type":"label","id":"out","x":80,"y":440,"text":"\\hat{y} = \\tanh(0.32) = 0.31","latex":true}
+] }
+```
+
+## Quiz
+
+?? If the hidden layer used the identity function instead of $\tanh$, the network would be mathematically equivalent to what?
+>> A single linear layer. Without a nonlinearity, composing two linear transformations $W^{(2)} W^{(1)} x$ is just another linear map — the hidden layer adds no representational power. Nonlinearities (tanh, ReLU, sigmoid) are what let deep networks model complex functions.
+
+?? In this trace we never changed the weights. What would it take to make the network actually *learn*?
+>> Backpropagation. Pick a loss function (e.g. $(\hat{y} - y)^2$ for regression). Compute the gradient of the loss with respect to each weight using the chain rule — essentially running a backward pass where each layer passes its error signal to the previous layer. Then apply gradient descent: $w \leftarrow w - \eta \cdot \partial L / \partial w$. Repeat over many input/target pairs.

@@ -1,0 +1,158 @@
+---
+version: 0.1
+title: 2D Convolution — Edge Detection
+subject: image-processing
+author: Teachbook starter
+---
+
+# 2D Convolution
+
+A convolution slides a small **kernel** (e.g. 3×3) across every position of a
+larger input image and computes a weighted sum at each location, producing an
+output **feature map**. It's the building block of convolutional neural
+networks and classical image filters.
+
+For an input $I$ of size $H \times W$ and a kernel $K$ of size $k \times k$:
+
+$$
+O[i, j] = \sum_{u=0}^{k-1} \sum_{v=0}^{k-1} I[i+u,\ j+v] \cdot K[u, v]
+$$
+
+with output size $(H - k + 1) \times (W - k + 1)$ for "valid" convolution
+(no padding). For this demo:
+
+- Input: 5×5 grayscale image with a horizontal bar
+- Kernel: 3×3 **horizontal edge detector**
+  $K = \begin{pmatrix} 1 & 1 & 1 \\ 0 & 0 & 0 \\ -1 & -1 & -1 \end{pmatrix}$
+- Output: 3×3 feature map (positive response where a bright-above / dark-below
+  boundary exists)
+
+```text
+1. Place the kernel over the top-left 3x3 window of the input.
+
+2. Element-wise multiply kernel values by the overlapping image values.
+
+3. Sum all 9 products. That's the output pixel for this kernel position.
+
+4. Slide the kernel one column right. Repeat until you reach the right edge.
+
+5. Move one row down, reset to the left. Continue until the whole feature
+   map is filled.
+```
+
+## Walking the kernel
+
+Input image is mostly 0 (dark) with a horizontal strip of 1s in row 1 (rows
+are 0-indexed). The edge detector should fire strongly at the *top* edge of
+the strip (rows where the bright pixel is below dark pixels).
+
+```scene step=0 narration="Input image: a bright horizontal bar at row 1. Kernel: horizontal edge detector. Output feature map starts empty (all zero)." code_lines=1
+{ "primitives": [
+  {"type":"heatmap","label":"input","x":40,"y":80,"cellSize":42,"showValues":true,
+   "values":[[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]},
+  {"type":"heatmap","label":"kernel","x":300,"y":320,"cellSize":32,"colormap":"diverging","showValues":true,
+   "values":[[1,1,1],[0,0,0],[-1,-1,-1]]},
+  {"type":"heatmap","label":"output","x":500,"y":80,"cellSize":42,"showValues":true,"vmin":-3,"vmax":3,
+   "values":[[0,0,0],[0,0,0],[0,0,0]]}
+] }
+```
+
+```scene step=1 narration="Position kernel at top-left (output [0,0]). The 3x3 window spans image rows 0-2, cols 0-2. All values in that window: 0,0,0,1,1,1,0,0,0." code_lines=1-3
+{ "primitives": [
+  {"type":"heatmap","label":"input","x":40,"y":80,"cellSize":42,"showValues":true,
+   "values":[[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+   "highlight":[[0,0,3,3]]},
+  {"type":"heatmap","label":"kernel","x":300,"y":320,"cellSize":32,"colormap":"diverging","showValues":true,
+   "values":[[1,1,1],[0,0,0],[-1,-1,-1]]},
+  {"type":"heatmap","label":"output","x":500,"y":80,"cellSize":42,"showValues":true,"vmin":-3,"vmax":3,
+   "values":[[0,0,0],[0,0,0],[0,0,0]],
+   "highlight":[[0,0,1,1]]},
+  {"type":"label","id":"calc","x":40,"y":420,"text":"(1\\cdot0 + 1\\cdot0 + 1\\cdot0) + (0\\cdot1 + 0\\cdot1 + 0\\cdot1) + (-1\\cdot0 + -1\\cdot0 + -1\\cdot0) = 0","latex":true}
+] }
+```
+
+```scene step=2 narration="Slide kernel right one column. Output[0,1] window = image rows 0-2, cols 1-3. Same pattern: 0,0,0 / 1,1,1 / 0,0,0 → result 0." code_lines=4
+{ "primitives": [
+  {"type":"heatmap","label":"input","x":40,"y":80,"cellSize":42,"showValues":true,
+   "values":[[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+   "highlight":[[0,1,3,3]]},
+  {"type":"heatmap","label":"kernel","x":300,"y":320,"cellSize":32,"colormap":"diverging","showValues":true,
+   "values":[[1,1,1],[0,0,0],[-1,-1,-1]]},
+  {"type":"heatmap","label":"output","x":500,"y":80,"cellSize":42,"showValues":true,"vmin":-3,"vmax":3,
+   "values":[[0,0,0],[0,0,0],[0,0,0]],
+   "highlight":[[0,1,1,1]]}
+] }
+```
+
+```scene step=3 narration="Output[0,2]: last column of the top row. Window pattern is identical — response is 0. Top row of output complete." code_lines=4
+{ "primitives": [
+  {"type":"heatmap","label":"input","x":40,"y":80,"cellSize":42,"showValues":true,
+   "values":[[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+   "highlight":[[0,2,3,3]]},
+  {"type":"heatmap","label":"kernel","x":300,"y":320,"cellSize":32,"colormap":"diverging","showValues":true,
+   "values":[[1,1,1],[0,0,0],[-1,-1,-1]]},
+  {"type":"heatmap","label":"output","x":500,"y":80,"cellSize":42,"showValues":true,"vmin":-3,"vmax":3,
+   "values":[[0,0,0],[0,0,0],[0,0,0]],
+   "highlight":[[0,2,1,1]]}
+] }
+```
+
+```scene step=4 narration="Next row. Output[1,0]: window = image rows 1-3, cols 0-2. Top of window is bright (1s), bottom rows are 0. Kernel: top row +1, bottom row -1. Result: 3." code_lines=4-5
+{ "primitives": [
+  {"type":"heatmap","label":"input","x":40,"y":80,"cellSize":42,"showValues":true,
+   "values":[[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+   "highlight":[[1,0,3,3]]},
+  {"type":"heatmap","label":"kernel","x":300,"y":320,"cellSize":32,"colormap":"diverging","showValues":true,
+   "values":[[1,1,1],[0,0,0],[-1,-1,-1]]},
+  {"type":"heatmap","label":"output","x":500,"y":80,"cellSize":42,"showValues":true,"vmin":-3,"vmax":3,"colormap":"diverging",
+   "values":[[0,0,0],[3,0,0],[0,0,0]],
+   "highlight":[[1,0,1,1]]},
+  {"type":"label","id":"calc","x":40,"y":420,"text":"(1)(1)+(1)(1)+(1)(1) + 0 + (-1)(0)+(-1)(0)+(-1)(0) = 3\\ \\text{— strong edge detected!}","latex":true}
+] }
+```
+
+```scene step=5 narration="Continue sliding. Middle row of the output all fire strongly (3) because the window straddles the top of the bright bar everywhere." code_lines=4-5
+{ "primitives": [
+  {"type":"heatmap","label":"input","x":40,"y":80,"cellSize":42,"showValues":true,
+   "values":[[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+   "highlight":[[1,1,3,3],[1,2,3,3]]},
+  {"type":"heatmap","label":"kernel","x":300,"y":320,"cellSize":32,"colormap":"diverging","showValues":true,
+   "values":[[1,1,1],[0,0,0],[-1,-1,-1]]},
+  {"type":"heatmap","label":"output","x":500,"y":80,"cellSize":42,"showValues":true,"vmin":-3,"vmax":3,"colormap":"diverging",
+   "values":[[0,0,0],[3,3,3],[0,0,0]],
+   "highlight":[[1,0,1,3]]}
+] }
+```
+
+```scene step=6 narration="Last row. Output[2,0]: window = image rows 2-4, cols 0-2 — all zeros. Response is 0. Same for output[2,1] and [2,2]." code_lines=6-7
+{ "primitives": [
+  {"type":"heatmap","label":"input","x":40,"y":80,"cellSize":42,"showValues":true,
+   "values":[[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+   "highlight":[[2,0,3,3]]},
+  {"type":"heatmap","label":"kernel","x":300,"y":320,"cellSize":32,"colormap":"diverging","showValues":true,
+   "values":[[1,1,1],[0,0,0],[-1,-1,-1]]},
+  {"type":"heatmap","label":"output","x":500,"y":80,"cellSize":42,"showValues":true,"vmin":-3,"vmax":3,"colormap":"diverging",
+   "values":[[0,0,0],[3,3,3],[0,0,0]],
+   "highlight":[[2,0,1,1]]}
+] }
+```
+
+```scene step=7 narration="Feature map complete. The filter fired in the middle row — exactly where bright-above / dark-below transitions exist. Edges detected." code_lines=8
+{ "primitives": [
+  {"type":"heatmap","label":"input","x":40,"y":80,"cellSize":42,"showValues":true,
+   "values":[[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]},
+  {"type":"heatmap","label":"kernel","x":300,"y":320,"cellSize":32,"colormap":"diverging","showValues":true,
+   "values":[[1,1,1],[0,0,0],[-1,-1,-1]]},
+  {"type":"heatmap","label":"output — horizontal edge response","x":500,"y":80,"cellSize":42,"showValues":true,"vmin":-3,"vmax":3,"colormap":"diverging",
+   "values":[[0,0,0],[3,3,3],[0,0,0]]},
+  {"type":"label","id":"note","x":40,"y":420,"text":"Positive response = bright→dark going down. Flip the kernel vertically to detect the other edge sign.","latex":false}
+] }
+```
+
+## Quiz
+
+?? The kernel $\begin{pmatrix} 1 & 1 & 1 \\ 0 & 0 & 0 \\ -1 & -1 & -1 \end{pmatrix}$ detects horizontal edges. How would you modify it to detect vertical edges instead?
+>> Rotate the kernel by 90°: $\begin{pmatrix} 1 & 0 & -1 \\ 1 & 0 & -1 \\ 1 & 0 & -1 \end{pmatrix}$. Now it responds when bright pixels are to the left and dark to the right (or vice versa).
+
+?? A CNN stacks many such convolutional layers. If layer 1 detects oriented edges, what sorts of patterns might a layer 3 or 4 neuron detect, and why?
+>> Higher layers combine the outputs of lower ones to form progressively more abstract features — edges combine into corners and textures, corners combine into shapes like circles or rectangles, and eventually into object parts (wheels, eyes, wings). Each layer has a larger "receptive field" in the original image, so deeper neurons see more context.

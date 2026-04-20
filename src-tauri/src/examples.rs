@@ -17,6 +17,8 @@ const RC_CIRCUIT: &str = include_str!("../../notebooks/rc-circuit.tbk");
 const DIJKSTRA: &str = include_str!("../../notebooks/dijkstra.tbk");
 const LCS_DP: &str = include_str!("../../notebooks/lcs-dp.tbk");
 const METHANE_COMBUSTION: &str = include_str!("../../notebooks/methane-combustion.tbk");
+const PERCEPTRON: &str = include_str!("../../notebooks/perceptron-forward.tbk");
+const CONVOLUTION: &str = include_str!("../../notebooks/convolution.tbk");
 
 #[tauri::command]
 pub fn list_bundled_notebooks() -> Vec<BundledNotebook> {
@@ -64,6 +66,15 @@ pub fn list_bundled_notebooks() -> Vec<BundledNotebook> {
         BundledNotebook {
             filename: "methane-combustion.tbk".into(),
             content: METHANE_COMBUSTION.into(),
+        },
+        // Machine learning (uses nn + heatmap plugins)
+        BundledNotebook {
+            filename: "perceptron-forward.tbk".into(),
+            content: PERCEPTRON.into(),
+        },
+        BundledNotebook {
+            filename: "convolution.tbk".into(),
+            content: CONVOLUTION.into(),
         },
         // Electronics
         BundledNotebook {

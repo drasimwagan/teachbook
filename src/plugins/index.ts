@@ -8,11 +8,15 @@
  */
 
 import { moleculePlugin } from "./chemistry/molecule";
+import { heatmapPlugin } from "./ml/heatmap";
+import { neuralNetworkPlugin } from "./ml/neural-network";
 import { registerPlugin } from "./registry";
 import type { TeachbookPlugin } from "./types";
 
 export const allPlugins: TeachbookPlugin[] = [
   moleculePlugin,
+  neuralNetworkPlugin,
+  heatmapPlugin,
   // Add more plugins below — see docs/PLUGIN_AUTHORING.md.
 ];
 
