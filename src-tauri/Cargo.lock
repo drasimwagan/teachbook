@@ -3930,6 +3930,7 @@ dependencies = [
 name = "teachbook"
 version = "0.1.0"
 dependencies = [
+ "dirs",
  "serde",
  "serde_json",
  "tauri",
