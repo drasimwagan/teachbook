@@ -19,6 +19,7 @@ const LCS_DP: &str = include_str!("../../notebooks/lcs-dp.tbk");
 const METHANE_COMBUSTION: &str = include_str!("../../notebooks/methane-combustion.tbk");
 const PERCEPTRON: &str = include_str!("../../notebooks/perceptron-forward.tbk");
 const CONVOLUTION: &str = include_str!("../../notebooks/convolution.tbk");
+const QUBIT_GATES: &str = include_str!("../../notebooks/qubit-gates.tbk");
 
 #[tauri::command]
 pub fn list_bundled_notebooks() -> Vec<BundledNotebook> {
@@ -75,6 +76,11 @@ pub fn list_bundled_notebooks() -> Vec<BundledNotebook> {
         BundledNotebook {
             filename: "convolution.tbk".into(),
             content: CONVOLUTION.into(),
+        },
+        // Quantum mechanics (uses bloch plugin)
+        BundledNotebook {
+            filename: "qubit-gates.tbk".into(),
+            content: QUBIT_GATES.into(),
         },
         // Electronics
         BundledNotebook {

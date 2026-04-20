@@ -1,0 +1,94 @@
+---
+version: 0.1
+title: Single-Qubit Gates on the Bloch Sphere
+subject: quantum
+author: Teachbook starter
+---
+
+# Single-Qubit Gates on the Bloch Sphere
+
+A single qubit lives on the **Bloch sphere** — a unit sphere where every
+pure state is a point:
+
+$$
+|\psi\rangle = \cos(\tfrac{\theta}{2})\,|0\rangle + e^{i\phi}\sin(\tfrac{\theta}{2})\,|1\rangle
+$$
+
+- $|0\rangle$ at the north pole, $|1\rangle$ at the south pole.
+- Equator contains the "equal superpositions" $|+\rangle$, $|-\rangle$,
+  $|+i\rangle$, $|-i\rangle$.
+
+A single-qubit **gate** is a rotation of the sphere. Three canonical
+Pauli-axis rotations:
+
+- **X gate** — 180° rotation around the x-axis. Flips $|0\rangle \leftrightarrow |1\rangle$.
+- **Z gate** — 180° rotation around the z-axis. Leaves $|0\rangle$, $|1\rangle$
+  fixed; flips the sign between $|+\rangle$ and $|-\rangle$.
+- **Hadamard (H)** — rotation that maps $|0\rangle \mapsto |+\rangle$ and
+  $|1\rangle \mapsto |-\rangle$. Equivalently, a 180° rotation around the
+  axis $(\hat x + \hat z)/\sqrt 2$.
+
+```text
+1. Start in the computational basis state |0⟩ — north pole.
+
+2. Apply H: state rotates to |+⟩ on the equator (x-axis).
+     H|0⟩ = (|0⟩ + |1⟩)/√2
+
+3. Apply Z: phase flip. On the Bloch sphere this is a 180° rotation around z,
+   swinging |+⟩ to |-⟩.
+     Z|+⟩ = (|0⟩ - |1⟩)/√2 = |-⟩
+
+4. Apply H again: |-⟩ maps to |1⟩.
+     H|-⟩ = |1⟩
+     (Useful fact: H · Z · H = X — the "Hadamard conjugation" identity.)
+
+5. Apply X: 180° around x. Flips |1⟩ back to |0⟩.
+     X|1⟩ = |0⟩
+```
+
+## Watching the gates rotate the state
+
+```scene step=0 narration="Start in |0⟩ — north pole of the Bloch sphere. Spherical coords: θ = 0, any φ." code_lines=1
+{ "primitives": [
+  {"type":"bloch","theta":0,"phi":0,"label":"|0⟩"}
+] }
+```
+
+```scene step=1 narration="Apply Hadamard (H). State rotates to |+⟩ on the equator, x-axis side. Coords: θ = π/2, φ = 0." code_lines=3-4
+{ "primitives": [
+  {"type":"bloch","theta":1.5708,"phi":0,"label":"|+⟩","trail":[[0,0]]}
+] }
+```
+
+```scene step=2 narration="Apply Z (phase gate). Rotation 180° around z sends |+⟩ → |-⟩ on the opposite side of the equator (φ = π)." code_lines=6-8
+{ "primitives": [
+  {"type":"bloch","theta":1.5708,"phi":3.1416,"label":"|-⟩","trail":[[0,0],[1.5708,0]]}
+] }
+```
+
+```scene step=3 narration="Apply Hadamard again. H takes |-⟩ → |1⟩ at the south pole. (This illustrates H·Z·H = X — a famous identity.)" code_lines=10-13
+{ "primitives": [
+  {"type":"bloch","theta":3.1416,"phi":0,"label":"|1⟩","trail":[[0,0],[1.5708,0],[1.5708,3.1416]]}
+] }
+```
+
+```scene step=4 narration="Apply X (bit flip). Rotation 180° around x returns us to |0⟩ — the loop closes." code_lines=15-17
+{ "primitives": [
+  {"type":"bloch","theta":0,"phi":0,"label":"|0⟩","trail":[[0,0],[1.5708,0],[1.5708,3.1416],[3.1416,0]]}
+] }
+```
+
+```scene step=5 narration="A full tour of the Bloch sphere using only H, Z, X. The trail shows every intermediate state we visited." code_lines=17
+{ "primitives": [
+  {"type":"bloch","theta":0,"phi":0,"label":"|0⟩","radius":170,"trail":[[0,0],[1.5708,0],[1.5708,3.1416],[3.1416,0]]},
+  {"type":"label","id":"note","x":40,"y":440,"text":"Identity verified: H\\cdot Z\\cdot H = X\\ (up\\ to\\ global\\ phase)","latex":true}
+] }
+```
+
+## Quiz
+
+?? Why is the $|0\rangle$ / $|1\rangle$ axis special — couldn't we write the Bloch sphere with any pair of orthogonal states at the poles?
+>> Yes, in principle. The $|0\rangle / |1\rangle$ axis is conventional because those are the computational basis states used by quantum algorithms and by the measurement operator in the $Z$ basis. Any other pair of orthogonal states (say $|+\rangle / |-\rangle$) also defines antipodal points on the sphere — choosing them as poles just rotates the whole sphere, giving a new valid representation. The physics is the same.
+
+?? What does the Bloch sphere *not* capture, and why does that matter?
+>> (1) Mixed states — a classical probabilistic mixture of pure states lives *inside* the ball, not on its surface; the sphere's surface is pure states only. (2) Global phase — multiplying $|\psi\rangle$ by $e^{i\alpha}$ gives the same point on the sphere, since global phase is physically unobservable. (3) Multi-qubit states — two qubits have an 8-parameter state space (after normalization and phase), no single sphere can represent it. Representing a 2-qubit state takes 2 Bloch spheres for separable states plus extra structure (e.g. density matrix decomposition) for entangled ones.
