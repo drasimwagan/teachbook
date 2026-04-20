@@ -121,8 +121,22 @@ function App() {
   const saveNotebook = useCallback(async () => {
     let path = currentPath;
     if (!path) {
+      let defaultPath: string | undefined;
+      try {
+        const libDir = await invoke<string>("user_notebooks_path");
+        const title = notebook?.metadata.title ?? "notebook";
+        const slug = title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "")
+          .slice(0, 40);
+        defaultPath = `${libDir}/${slug || "notebook"}.tbk`;
+      } catch {
+        // fall through — no default
+      }
       const chosen = await save({
         filters: [{ name: "Teachbook", extensions: ["tbk"] }],
+        defaultPath,
       });
       if (!chosen) return;
       path = chosen;
@@ -133,7 +147,7 @@ function App() {
     } catch (e) {
       setParseErrors([`Failed to save: ${String(e)}`]);
     }
-  }, [currentPath, source]);
+  }, [currentPath, source, notebook]);
 
   const totalSteps = notebook?.totalSteps ?? 0;
 
@@ -248,10 +262,10 @@ function App() {
       <ExamplesDialog
         open={examplesOpen}
         onClose={() => setExamplesOpen(false)}
-        onSelect={(tbk, filename) => {
+        onSelect={(tbk, filename, path) => {
           snapshotAnd(`load ${filename}`, () => {
             setSource(tbk);
-            setCurrentPath(null);
+            setCurrentPath(path ?? null);
             setCurrentStep(0);
           });
         }}
