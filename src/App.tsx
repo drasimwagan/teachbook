@@ -6,6 +6,7 @@ import VisualizationPane from "./components/VisualizationPane";
 import ChatPane from "./components/ChatPane";
 import StepControls from "./components/StepControls";
 import GenerateDialog from "./components/GenerateDialog";
+import ExamplesDialog from "./components/ExamplesDialog";
 import { parseTbk } from "./lib/tbk-parser";
 import type { Notebook } from "./types";
 import "./App.css";
@@ -16,10 +17,17 @@ subject: intro
 version: 0.1
 ---
 
-# Welcome
+# Welcome to Teachbook
 
-Open a \`.tbk\` notebook (File → Open) or start typing here. Changes are
-parsed live, and the Visualization pane renders the current step.
+Step through concepts like a debugger — the same engine teaches algorithms,
+physics, chemistry, and more. To get started:
+
+- **Examples** — browse a few built-in notebooks to see the idea
+- **Open** — load a \`.tbk\` file from disk
+- **Generate** — describe what you want to teach and let Claude write it
+
+Once a notebook is loaded, use **Next / Prev** (top right) to step through.
+Switch the Concept pane to **Edit** to tweak the source.
 `;
 
 function App() {
@@ -29,6 +37,7 @@ function App() {
   const [source, setSource] = useState<string>(WELCOME);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [examplesOpen, setExamplesOpen] = useState(false);
 
   // Initial parse of welcome text
   useEffect(() => {
@@ -117,6 +126,12 @@ function App() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setExamplesOpen(true)}
+            className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-sm"
+          >
+            Examples
+          </button>
+          <button
             onClick={openNotebook}
             className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-sm"
           >
@@ -163,6 +178,15 @@ function App() {
         open={generateOpen}
         onClose={() => setGenerateOpen(false)}
         onGenerated={(tbk) => {
+          setSource(tbk);
+          setCurrentPath(null);
+          setCurrentStep(0);
+        }}
+      />
+      <ExamplesDialog
+        open={examplesOpen}
+        onClose={() => setExamplesOpen(false)}
+        onSelect={(tbk) => {
           setSource(tbk);
           setCurrentPath(null);
           setCurrentStep(0);

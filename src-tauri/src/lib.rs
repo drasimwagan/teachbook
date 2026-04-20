@@ -1,9 +1,11 @@
 mod claude;
+mod examples;
 
 use std::fs;
 use std::path::PathBuf;
 
 use claude::{claude_check, claude_generate_notebook, claude_prompt, claude_prompt_stream};
+use examples::list_bundled_notebooks;
 
 #[tauri::command]
 fn load_notebook(path: String) -> Result<String, String> {
@@ -34,7 +36,8 @@ pub fn run() {
             claude_check,
             claude_prompt,
             claude_prompt_stream,
-            claude_generate_notebook
+            claude_generate_notebook,
+            list_bundled_notebooks
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
