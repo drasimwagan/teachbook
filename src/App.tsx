@@ -9,6 +9,7 @@ import GenerateDialog from "./components/GenerateDialog";
 import ExamplesDialog from "./components/ExamplesDialog";
 import InsertStepDialog from "./components/InsertStepDialog";
 import { parseTbk } from "./lib/tbk-parser";
+import { useHistory } from "./lib/useHistory";
 import type { Notebook } from "./types";
 import "./App.css";
 
@@ -40,6 +41,39 @@ function App() {
   const [generateOpen, setGenerateOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [insertAfter, setInsertAfter] = useState<number | null>(null);
+
+  const history = useHistory();
+
+  const snapshotAnd = useCallback(
+    (label: string, apply: () => void) => {
+      history.snapshot({ source, currentStep, currentPath, label });
+      apply();
+    },
+    [history, source, currentStep, currentPath],
+  );
+
+  const handleUndo = useCallback(() => {
+    const prev = history.undo();
+    if (!prev) return;
+    setSource(prev.source);
+    setCurrentStep(prev.currentStep);
+    setCurrentPath(prev.currentPath);
+  }, [history]);
+
+  // Global ⌘⇧Z / Ctrl+Shift+Z shortcut. Uses Shift+Z so we don't shadow
+  // CodeMirror's ⌘Z inside the editor.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toLowerCase().includes("mac");
+      const mod = isMac ? e.metaKey : e.ctrlKey;
+      if (mod && e.shiftKey && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleUndo]);
 
   // Initial parse of welcome text
   useEffect(() => {
@@ -73,13 +107,16 @@ function App() {
     if (!selected || typeof selected !== "string") return;
     try {
       const contents = await invoke<string>("load_notebook", { path: selected });
-      setSource(contents);
-      setCurrentPath(selected);
-      setCurrentStep(0);
+      const name = selected.split("/").pop() ?? selected;
+      snapshotAnd(`open ${name}`, () => {
+        setSource(contents);
+        setCurrentPath(selected);
+        setCurrentStep(0);
+      });
     } catch (e) {
       setParseErrors([`Failed to open: ${String(e)}`]);
     }
-  }, []);
+  }, [snapshotAnd]);
 
   const saveNotebook = useCallback(async () => {
     let path = currentPath;
@@ -127,6 +164,23 @@ function App() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleUndo}
+            disabled={history.depth === 0}
+            title={
+              history.lastLabel
+                ? `Undo: ${history.lastLabel} (⌘⇧Z)`
+                : "Nothing to undo"
+            }
+            className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-sm disabled:opacity-40"
+          >
+            ↶ Undo
+            {history.depth > 1 && (
+              <span className="ml-1 text-xs text-zinc-500 tabular-nums">
+                {history.depth}
+              </span>
+            )}
+          </button>
           <button
             onClick={() => setExamplesOpen(true)}
             className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-sm"
@@ -184,18 +238,22 @@ function App() {
         open={generateOpen}
         onClose={() => setGenerateOpen(false)}
         onGenerated={(tbk) => {
-          setSource(tbk);
-          setCurrentPath(null);
-          setCurrentStep(0);
+          snapshotAnd("generate notebook", () => {
+            setSource(tbk);
+            setCurrentPath(null);
+            setCurrentStep(0);
+          });
         }}
       />
       <ExamplesDialog
         open={examplesOpen}
         onClose={() => setExamplesOpen(false)}
-        onSelect={(tbk) => {
-          setSource(tbk);
-          setCurrentPath(null);
-          setCurrentStep(0);
+        onSelect={(tbk, filename) => {
+          snapshotAnd(`load ${filename}`, () => {
+            setSource(tbk);
+            setCurrentPath(null);
+            setCurrentStep(0);
+          });
         }}
       />
       <InsertStepDialog
@@ -204,8 +262,10 @@ function App() {
         source={source}
         onClose={() => setInsertAfter(null)}
         onInserted={(newSource, newStepIndex) => {
-          setSource(newSource);
-          setCurrentStep(newStepIndex);
+          snapshotAnd(`insert after step ${(insertAfter ?? 0) + 1}`, () => {
+            setSource(newSource);
+            setCurrentStep(newStepIndex);
+          });
         }}
       />
     </div>
