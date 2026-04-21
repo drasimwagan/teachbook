@@ -15,6 +15,7 @@ new primitives, [`PLUGIN_AUTHORING.md`](PLUGIN_AUTHORING.md).
 │  │  React 19 + TypeScript frontend                    │     │
 │  │  - App.tsx      (state + glue)                     │     │
 │  │  - Concept / Visualization / Chat panes            │     │
+│  │  - Run pane (Pyodide, lazy CDN load)               │     │
 │  │  - SceneRenderer + core primitives                 │     │
 │  │  - Plugin registry                                 │     │
 │  │  - tbk-parser / tbk-serializer                     │     │
@@ -215,6 +216,33 @@ finishes, `insertStepAfter` in `src/lib/notebook-edit.ts` does:
 4. Re-parses the new source
 5. Advances `currentStep` to the newly inserted step
 
+### 5. Running notebook code (Pyodide)
+
+1. User clicks **▸ Run** in the header → `App.tsx` toggles `runOpen`
+2. `RunPane` (`src/components/RunPane.tsx`) renders as a 38vh bottom
+   drawer with a CodeMirror Python editor + a stdout/stderr log
+3. On first **▶ Run**, `ensurePyodide()` calls
+   `getPyodide()` in `src/lib/pyodide-runner.ts`:
+   - Injects `<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js">`
+   - Awaits `window.loadPyodide({ indexURL: ... })`
+   - Caches the singleton promise so subsequent runs reuse the same interpreter
+4. `runPython(py, code, onStdout, onStderr)`:
+   - Wires `pyodide.setStdout({ batched })` and `setStderr({ batched })`
+     into log callbacks that push into the `log` state array
+   - `await py.runPythonAsync(code)` — exceptions are captured and printed red
+5. **Inject scene** walks the current step's `scene.primitives` and calls
+   `pyodide.globals.set(key, pyodide.toPy(value))` for each. Keys are
+   `scene`, `primitives`, plus one entry per primitive (its `id` or
+   `<type>_<index>`). JS objects → Python dicts via Pyodide's JSON-like
+   converter.
+6. **Save… / Load…** reuse `save_notebook` / `load_notebook` (generic
+   text I/O) with the Tauri dialog defaulting to
+   `user_experiments_path()`.
+
+The interpreter state — variables, imports, package installs — persists
+across runs within a session because the Pyodide instance is a module
+singleton. Closing the drawer with **✕** does not reset it.
+
 ## Parser
 
 `src/lib/tbk-parser.ts` uses `unified` + `remark-parse` + `remark-frontmatter`
@@ -288,6 +316,7 @@ Registered in `src-tauri/src/lib.rs::run()`:
 | `list_bundled_notebooks` | `() → Vec<BundledNotebook>` | Baked-in examples |
 | `list_user_notebooks` | `() → Vec<UserNotebook>` | `~/Teachbook/notebooks/*` |
 | `user_notebooks_path` | `() → Result<String>` | Absolute path, creates dir |
+| `user_experiments_path` | `() → Result<String>` | `~/Teachbook/experiments/` — for Run-pane `.py` scratch files |
 | `app_version` | `() → String` | Cargo version |
 
 All command handlers are intentionally small. Streaming uses

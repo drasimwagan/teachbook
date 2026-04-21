@@ -57,6 +57,8 @@ Left to right:
 - **Save** — save to the current path, or prompt for a new one (defaults
   to `~/Teachbook/notebooks/<slugified-title>.tbk`)
 - **Generate** (blue) — open the Generate dialog
+- **▸ Run** — toggle the Run pane (bottom drawer) to execute the
+  notebook's Python. Turns green with **▾ Run** when open.
 - **◀ Prev / Next ▶** — step controls
 - **Reset** — jump to step 1
 - **Step N / M** counter
@@ -125,6 +127,52 @@ hit zero at the peak?"), request alternate examples ("redo this with an
 - The current notebook source (truncated to 6000 chars) and current step
   narration are injected into Claude's system prompt automatically
 
+## Run the notebook's code (Pyodide)
+
+Click **▸ Run** in the header. A drawer slides up from the bottom with a
+Python editor on the left and an output log on the right.
+
+```
+┌──────────────────────────────┬──────────────────────────────┐
+│ CodeMirror (Python)          │ stdout/stderr log            │
+│ seeded from the current      │ >>> run                      │
+│ cell's code block            │ hello from pyodide           │
+│                              │ ...                          │
+└──────────────────────────────┴──────────────────────────────┘
+  ▶ Run  Inject scene  Reset  Clear output  |  Save…  Load…  |  ✕
+```
+
+**First run** fetches Pyodide (~6 MB WASM) from jsdelivr; you'll see
+`loading Pyodide from CDN… → initializing Python runtime… → ready`
+next to the "Run" title. Subsequent runs reuse the same interpreter,
+so variables persist across runs within a session.
+
+- **▶ Run** — execute the editor contents. stdout shows white, stderr
+  shows red, info lines (`>>> run`, injections) show gray. Exceptions
+  print the Python traceback in red.
+- **Inject scene** — exposes the current step's scene data as Python
+  globals: `scene` (the whole `{ primitives: [...] }` dict),
+  `primitives` (the list), and one variable per primitive keyed by its
+  `id` (if present) or `<type>_<index>` (e.g. `grid_0`, `arrow_2`).
+  Inspect state directly from Python: `print(primitives[0]["values"])`.
+- **Reset** — restore the editor to the notebook cell's code,
+  discarding edits.
+- **Clear output** — wipe the log without restarting the interpreter.
+- **Save…** / **Load…** — persist the editor contents as a `.py`
+  experiment in `~/Teachbook/experiments/`. Useful for keeping your
+  own scratch work separate from the notebook.
+- **✕** — close the drawer. The interpreter state survives; reopening
+  and hitting ▶ Run picks up where you left off.
+
+Pyodide ships a useful Python stdlib subset: `math`, `random`,
+`itertools`, `collections`, `statistics`, `json`, `re`, `datetime`.
+NumPy is available on demand via `import numpy as np` (it installs on
+first import, ~8 MB more). For a full list of pre-built packages,
+see the [Pyodide docs](https://pyodide.org/en/stable/usage/packages-in-pyodide.html).
+
+Internet is only required on first load; after that Pyodide and its
+packages are cached by the browser/webview.
+
 ## Generate a notebook
 
 **Generate** button → dialog → describe what you want to teach.
@@ -188,6 +236,9 @@ the app or loading another notebook drops unsaved edits.
   gallery.
 - **Bundled examples** — baked into the app binary via `include_str!`;
   updating the app updates the examples.
+- **Experiments** — `~/Teachbook/experiments/` (created on first Save
+  from the Run pane). Your scratch `.py` files; not linked to any
+  notebook.
 - **Claude CLI** — resolved in this order: `TEACHBOOK_CLAUDE_BIN` env
   var, then your shell's `PATH`, then `/opt/homebrew/bin/claude`,
   `/usr/local/bin/claude`, `~/.local/bin/claude`.
@@ -221,6 +272,21 @@ text is rendered as literal SVG text. In prose, LaTeX uses standard
 **My edits in Edit mode vanished after Generate.**
 Generate replaces the entire source and pushes the old state onto Undo.
 Hit `⌘⇧Z` to get your edits back.
+
+**Run pane stuck on "loading Pyodide from CDN…".**
+First load needs internet to reach jsdelivr. Check your connection,
+then open DevTools (`⌘⌥I`) → Console for a blocked-script error. If
+you're behind a strict firewall or need offline use, see the open
+issue about bundling Pyodide locally.
+
+**Run pane says "No scene available for the current step".**
+The step has no scene fence, or the notebook has no cells with steps
+(e.g. the Welcome placeholder). Load a real notebook and try again.
+
+**Running NumPy code hangs on the first import.**
+First import downloads and installs the NumPy wheel (~8 MB). Give it
+10–20 s; the status stays on "ready" but the Python interpreter is
+busy. Subsequent imports are instant.
 
 ## Still stuck?
 
