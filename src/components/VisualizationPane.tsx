@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import type { Cell, Notebook, Scene, Step } from "../types";
+import type { PrimitivePatch } from "../lib/scene-edit";
 import SceneRenderer from "./SceneRenderer";
 
 // CodeStepView pulls @codemirror/lang-python + @codemirror/lang-javascript.
@@ -10,6 +11,17 @@ type Props = {
   notebook: Notebook | null;
   currentStep: number;
   onInsertStep?: (afterStepIndex: number) => void;
+  /**
+   * Called when the user drags a draggable primitive to a new position.
+   * `sourceLine`/`sourceEndLine` identify the scene fence in the source
+   * (1-indexed); `primitiveIndex` is the index in `scene.primitives`.
+   */
+  onPrimitivePatch?: (
+    sourceLine: number,
+    sourceEndLine: number,
+    primitiveIndex: number,
+    patch: PrimitivePatch,
+  ) => void;
 };
 
 type Located = { cell: Cell; step: Step } | null;
@@ -31,6 +43,7 @@ export default function VisualizationPane({
   notebook,
   currentStep,
   onInsertStep,
+  onPrimitivePatch,
 }: Props) {
   const located = locate(notebook, currentStep);
   const scene: Scene | null = located?.step.scene ?? null;
@@ -39,6 +52,13 @@ export default function VisualizationPane({
   const codeLang = located?.cell.codeLang;
   const codeLines = located?.step.codeLines;
   const hasCode = !!code.trim();
+  const sourceLine = located?.step.sourceLine;
+  const sourceEndLine = located?.step.sourceEndLine;
+  const patch =
+    onPrimitivePatch && sourceLine && sourceEndLine
+      ? (i: number, p: PrimitivePatch) =>
+          onPrimitivePatch(sourceLine, sourceEndLine, i, p)
+      : undefined;
 
   return (
     <section className="flex flex-col border-r border-zinc-200 dark:border-zinc-800 overflow-hidden min-h-0">
@@ -56,7 +76,7 @@ export default function VisualizationPane({
         >
           <div className="h-full w-full flex items-center justify-center p-2">
             {scene ? (
-              <SceneRenderer scene={scene} />
+              <SceneRenderer scene={scene} onPrimitivePatch={patch} />
             ) : (
               <div className="text-sm text-zinc-400">
                 {notebook?.totalSteps === 0

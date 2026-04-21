@@ -216,7 +216,24 @@ finishes, `insertStepAfter` in `src/lib/notebook-edit.ts` does:
 4. Re-parses the new source
 5. Advances `currentStep` to the newly inserted step
 
-### 5. Running notebook code (Pyodide)
+### 5. Dragging a primitive (bi-directional editing)
+
+1. User grabs a `shape` or `label` in the Visualization pane
+2. `SceneRenderer` captures the pointer, tracks viewBox coords in local
+   state, and re-renders the primitive at the override position each move
+3. On pointerup, coords are inverse-projected through the scene's `axes`
+   (if any) back into the primitive's own space
+4. `onPrimitivePatch(sourceLine, sourceEndLine, index, { x, y })` bubbles
+   up through `VisualizationPane` to `App.tsx`
+5. `updatePrimitiveInSource` in `src/lib/scene-edit.ts` splices the new
+   JSON back into the source between the fence markers, preserving
+   compact-vs-pretty formatting
+6. `snapshotAnd("drag primitive", …)` pushes the current source onto the
+   Undo stack, then applies the new source
+7. The 250 ms re-parse picks it up; since the primitive's `id` and array
+   index are unchanged, the tween keeps the element in place
+
+### 6. Running notebook code (Pyodide)
 
 1. User clicks **▸ Run** in the header → `App.tsx` toggles `runOpen`
 2. `RunPane` (`src/components/RunPane.tsx`) renders as a 38vh bottom

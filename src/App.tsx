@@ -10,6 +10,7 @@ import ExamplesDialog from "./components/ExamplesDialog";
 import InsertStepDialog from "./components/InsertStepDialog";
 import RunPane from "./components/RunPane";
 import { parseTbk } from "./lib/tbk-parser";
+import { updatePrimitiveInSource, type PrimitivePatch } from "./lib/scene-edit";
 import { useHistory } from "./lib/useHistory";
 import type { Notebook } from "./types";
 import "./App.css";
@@ -174,6 +175,29 @@ function App() {
 
   const totalSteps = notebook?.totalSteps ?? 0;
 
+  const handlePrimitivePatch = useCallback(
+    (
+      sourceLine: number,
+      sourceEndLine: number,
+      primitiveIndex: number,
+      patch: PrimitivePatch,
+    ) => {
+      const res = updatePrimitiveInSource(
+        source,
+        sourceLine,
+        sourceEndLine,
+        primitiveIndex,
+        patch,
+      );
+      if (!res.ok) {
+        setParseErrors([`drag: ${res.error}`]);
+        return;
+      }
+      snapshotAnd("drag primitive", () => setSource(res.source));
+    },
+    [source, snapshotAnd],
+  );
+
   const activeSceneRange = useMemo<[number, number] | undefined>(() => {
     if (!notebook) return undefined;
     let remaining = currentStep;
@@ -295,6 +319,7 @@ function App() {
           notebook={notebook}
           currentStep={currentStep}
           onInsertStep={(afterIndex) => setInsertAfter(afterIndex)}
+          onPrimitivePatch={handlePrimitivePatch}
         />
         <ChatPane
           notebook={notebook}

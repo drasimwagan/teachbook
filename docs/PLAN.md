@@ -146,10 +146,30 @@ main JS bundle stays lean. `src/lib/pyodide-runner.ts` owns the singleton
 load promise and the run/inject helpers. Future enhancement: optional
 bundled wheel for offline use.
 
-### Phase 3 — Bi-directional editing — not started
-- [ ] Drag a scene element (e.g. a ball in projectile motion) → source updates
-- [ ] Generated changes respect `id`s so tweens remain smooth
-- [ ] Undo-aware so bad drags are easy to back out
+### Phase 3 — Bi-directional editing ✅ (MVP)
+- [x] Drag a scene element → source updates. Supported primitives:
+  `shape` (circle + rect) and `label`. Pointer-captured SVG drag with
+  viewBox-space tracking; commit on pointerup.
+- [x] Generated changes respect `id`s so tweens remain smooth — the
+  patch only touches `x`/`y`, never `id`, and primitives without an id
+  stay in the same array index so positional React keys still line up.
+- [x] Undo-aware — each drop wraps `snapshotAnd("drag primitive", …)`,
+  so ⌘⇧Z reverses the most recent drag.
+
+The scene-edit helper (`src/lib/scene-edit.ts`) does surgical fence
+replacement: it re-parses the scene JSON, patches the target primitive,
+and preserves compact-vs-pretty formatting of the original fence. When
+an `axes` primitive is present, pointer coords are inverse-projected
+back into data space before the patch, so dragging the ball in
+`projectile-motion.tbk` still yields sensible data-space values.
+
+Follow-ups (not MVP):
+
+- Arrow endpoint drag (two handles per arrow)
+- Graph node drag
+- Polygon drag (currently disabled; the existing polygon code paths
+  don't tween vertices anyway)
+- Drag snapping / axis constraints for structured notebooks
 
 ### Phase 4 — Test mode — not started
 - [ ] Teacher-authored quiz notebooks with rubrics (schema already supports this)

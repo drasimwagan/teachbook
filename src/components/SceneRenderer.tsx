@@ -1,6 +1,7 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useCallback, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { getPlugin } from "../plugins";
+import type { PrimitivePatch } from "../lib/scene-edit";
 // Side-effect import so plugins self-register on first load.
 import "../plugins";
 import type {
@@ -21,20 +22,113 @@ import type {
 // has `latex: true` labels.
 const MathLabel = lazy(() => import("./MathLabel"));
 
-type Props = { scene: Scene };
+type Props = {
+  scene: Scene;
+  /**
+   * When provided, `shape` and `label` primitives become draggable. The
+   * callback is invoked on pointerup with the index in `scene.primitives`
+   * and the property patch (e.g. `{ x: 123, y: 456 }`). Coords in the
+   * patch are always in the primitive's own space — data-space when an
+   * axes primitive is present, viewBox-space otherwise.
+   */
+  onPrimitivePatch?: (primitiveIndex: number, patch: PrimitivePatch) => void;
+};
 
 const VIEW_W = 800;
 const VIEW_H = 500;
+const AXES_PAD = 60;
 
 const TWEEN = { type: "tween", duration: 0.35, ease: "easeOut" } as const;
 
-export default function SceneRenderer({ scene }: Props) {
+/** Invert `project`: viewBox coords → data-space coords given an axes primitive. */
+function unproject(
+  axes: AxesPrimitive | undefined,
+  px: number,
+  py: number,
+): [number, number] {
+  if (!axes) return [px, py];
+  const w = VIEW_W - AXES_PAD * 2;
+  const h = VIEW_H - AXES_PAD * 2;
+  const x = axes.xMin + ((px - AXES_PAD) / w) * (axes.xMax - axes.xMin);
+  const y = axes.yMin + ((VIEW_H - AXES_PAD - py) / h) * (axes.yMax - axes.yMin);
+  return [x, y];
+}
+
+/** Convert a pointer event's client coords into the SVG's viewBox space. */
+function pointerToSvg(
+  svg: SVGSVGElement | null,
+  clientX: number,
+  clientY: number,
+): [number, number] | null {
+  if (!svg) return null;
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return null;
+  const pt = svg.createSVGPoint();
+  pt.x = clientX;
+  pt.y = clientY;
+  const local = pt.matrixTransform(ctm.inverse());
+  return [local.x, local.y];
+}
+
+export default function SceneRenderer({ scene, onPrimitivePatch }: Props) {
   const axes = scene.primitives.find((p): p is AxesPrimitive => p.type === "axes");
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  // Per-primitive transient drag offset in viewBox space, keyed by index.
+  // `null` = not currently dragging that primitive.
+  const [dragState, setDragState] = useState<{
+    index: number;
+    vx: number;
+    vy: number;
+  } | null>(null);
+
+  const startDrag = useCallback(
+    (index: number, e: React.PointerEvent<SVGElement>) => {
+      if (!onPrimitivePatch) return;
+      (e.currentTarget as SVGElement).setPointerCapture(e.pointerId);
+      const v = pointerToSvg(svgRef.current, e.clientX, e.clientY);
+      if (!v) return;
+      setDragState({ index, vx: v[0], vy: v[1] });
+    },
+    [onPrimitivePatch],
+  );
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent<SVGElement>) => {
+      if (!dragState) return;
+      const v = pointerToSvg(svgRef.current, e.clientX, e.clientY);
+      if (!v) return;
+      setDragState({ index: dragState.index, vx: v[0], vy: v[1] });
+    },
+    [dragState],
+  );
+
+  const endDrag = useCallback(
+    (e: React.PointerEvent<SVGElement>) => {
+      if (!dragState || !onPrimitivePatch) {
+        setDragState(null);
+        return;
+      }
+      const [dx, dy] = unproject(axes, dragState.vx, dragState.vy);
+      onPrimitivePatch(dragState.index, { x: roundTo(dx), y: roundTo(dy) });
+      setDragState(null);
+      try {
+        (e.currentTarget as SVGElement).releasePointerCapture(e.pointerId);
+      } catch {
+        // releasePointerCapture can throw if the pointer was never captured
+      }
+    },
+    [dragState, axes, onPrimitivePatch],
+  );
+
   return (
     <svg
+      ref={svgRef}
       viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       className="h-full w-full max-h-full max-w-full"
       preserveAspectRatio="xMidYMid meet"
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
     >
       <defs>
         <marker
@@ -49,10 +143,28 @@ export default function SceneRenderer({ scene }: Props) {
         </marker>
       </defs>
       {scene.primitives.map((p, i) => (
-        <Primitive key={primitiveKey(p, i)} p={p} axes={axes} />
+        <Primitive
+          key={primitiveKey(p, i)}
+          p={p}
+          axes={axes}
+          index={i}
+          onStartDrag={onPrimitivePatch ? startDrag : undefined}
+          dragOverride={
+            dragState && dragState.index === i
+              ? [dragState.vx, dragState.vy]
+              : undefined
+          }
+        />
       ))}
     </svg>
   );
+}
+
+function roundTo(n: number): number {
+  // Round to 1 decimal place for data-space coords, integer for viewBox.
+  // We can't know which space we're in here, so use 2 decimals universally;
+  // numbers that are whole will serialize without a decimal anyway.
+  return Math.round(n * 100) / 100;
 }
 
 function primitiveKey(p: ScenePrimitive, fallbackIndex: number): string {
@@ -72,16 +184,49 @@ function project(axes: AxisCtx, x: number, y: number): [number, number] {
   return [px, py];
 }
 
-function Primitive({ p, axes }: { p: ScenePrimitive; axes: AxisCtx }) {
+type DragStart = (
+  index: number,
+  e: React.PointerEvent<SVGElement>,
+) => void;
+
+function Primitive({
+  p,
+  axes,
+  index,
+  onStartDrag,
+  dragOverride,
+}: {
+  p: ScenePrimitive;
+  axes: AxisCtx;
+  index: number;
+  onStartDrag?: DragStart;
+  dragOverride?: [number, number];
+}) {
   switch (p.type) {
     case "grid":
       return <Grid p={p} />;
     case "shape":
-      return <Shape p={p} axes={axes} />;
+      return (
+        <Shape
+          p={p}
+          axes={axes}
+          index={index}
+          onStartDrag={onStartDrag}
+          dragOverride={dragOverride}
+        />
+      );
     case "arrow":
       return <Arrow p={p} axes={axes} />;
     case "label":
-      return <Label p={p} axes={axes} />;
+      return (
+        <Label
+          p={p}
+          axes={axes}
+          index={index}
+          onStartDrag={onStartDrag}
+          dragOverride={dragOverride}
+        />
+      );
     case "axes":
       return <Axes p={p} />;
     case "plot":
@@ -169,18 +314,44 @@ function Grid({ p }: { p: GridPrimitive }) {
   );
 }
 
-function Shape({ p, axes }: { p: ShapePrimitive; axes: AxisCtx }) {
-  const [x, y] = project(axes, p.x, p.y);
+function Shape({
+  p,
+  axes,
+  index,
+  onStartDrag,
+  dragOverride,
+}: {
+  p: ShapePrimitive;
+  axes: AxisCtx;
+  index: number;
+  onStartDrag?: DragStart;
+  dragOverride?: [number, number];
+}) {
+  const projected = project(axes, p.x, p.y);
+  const [x, y] = dragOverride ?? projected;
   const fill = p.fill ?? "#60a5fa";
   const stroke = p.stroke ?? "#1e3a8a";
+  const draggable = !!onStartDrag && p.shape !== "polygon";
+  const dragProps = draggable
+    ? {
+        style: { cursor: dragOverride ? "grabbing" : "grab" } as const,
+        onPointerDown: (e: React.PointerEvent<SVGElement>) => {
+          e.stopPropagation();
+          onStartDrag!(index, e);
+        },
+      }
+    : {};
+  // When actively dragging, skip the tween so the element tracks the pointer.
+  const transition = dragOverride ? { duration: 0 } : TWEEN;
   if (p.shape === "circle") {
     return (
       <motion.circle
         animate={{ cx: x, cy: y }}
-        transition={TWEEN}
+        transition={transition}
         r={p.radius ?? 20}
         fill={fill}
         stroke={stroke}
+        {...dragProps}
       />
     );
   }
@@ -190,11 +361,12 @@ function Shape({ p, axes }: { p: ShapePrimitive; axes: AxisCtx }) {
     return (
       <motion.rect
         animate={{ x: x - w / 2, y: y - h / 2 }}
-        transition={TWEEN}
+        transition={transition}
         width={w}
         height={h}
         fill={fill}
         stroke={stroke}
+        {...dragProps}
       />
     );
   }
@@ -233,8 +405,32 @@ function Arrow({ p, axes }: { p: ArrowPrimitive; axes: AxisCtx }) {
   );
 }
 
-function Label({ p, axes }: { p: LabelPrimitive; axes: AxisCtx }) {
-  const [x, y] = project(axes, p.x, p.y);
+function Label({
+  p,
+  axes,
+  index,
+  onStartDrag,
+  dragOverride,
+}: {
+  p: LabelPrimitive;
+  axes: AxisCtx;
+  index: number;
+  onStartDrag?: DragStart;
+  dragOverride?: [number, number];
+}) {
+  const projected = project(axes, p.x, p.y);
+  const [x, y] = dragOverride ?? projected;
+  const draggable = !!onStartDrag;
+  const dragProps = draggable
+    ? {
+        style: { cursor: dragOverride ? "grabbing" : "grab" } as const,
+        onPointerDown: (e: React.PointerEvent<SVGElement>) => {
+          e.stopPropagation();
+          onStartDrag!(index, e);
+        },
+      }
+    : {};
+  const transition = dragOverride ? { duration: 0 } : TWEEN;
 
   if (p.latex) {
     return (
@@ -242,9 +438,10 @@ function Label({ p, axes }: { p: LabelPrimitive; axes: AxisCtx }) {
         fallback={
           <motion.text
             animate={{ x, y }}
-            transition={TWEEN}
+            transition={transition}
             fontSize={14}
             fill="currentColor"
+            {...dragProps}
           >
             {p.text}
           </motion.text>
@@ -258,10 +455,11 @@ function Label({ p, axes }: { p: LabelPrimitive; axes: AxisCtx }) {
   return (
     <motion.text
       animate={{ x, y }}
-      transition={TWEEN}
+      transition={transition}
       fontSize={14}
       fill="currentColor"
       className="text-zinc-800 dark:text-zinc-100"
+      {...dragProps}
     >
       {p.text}
     </motion.text>

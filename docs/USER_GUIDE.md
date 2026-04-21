@@ -87,6 +87,15 @@ The visualization tweens between steps for primitives that keep a stable
 `id` — watch the ball arc in the projectile notebook, or the state
 vector rotate on the Bloch sphere.
 
+### Drag to edit
+
+`shape` (circles, rectangles) and `label` primitives show a grab cursor
+when you hover them. Click and drag to reposition; the source is updated
+on release. When the scene has an `axes` primitive, the new coordinates
+are written in data space (so a dragged projectile-motion ball still has
+meters-scale `x`/`y`); otherwise coordinates are in the viewBox. Each
+drop pushes a snapshot to Undo, so `⌘⇧Z` reverses a bad drag.
+
 The narration strip at the bottom shows the current step number, total
 step count, and the per-step narration text (the `narration="..."`
 attribute on the scene block).

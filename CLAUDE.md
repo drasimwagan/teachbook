@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Phases 1 and 2 implemented. Release held pending smoke-test of the Run
-pane in `pnpm tauri dev`.** The
+**Phases 1–3 implemented. v0.2.0 draft in CI with Phase 2 (Run pane);
+Phase 3 (bi-directional editing) is post-v0.2 main-branch work.** The
 engine is stable. The app ships 17 bundled notebooks (128 scenes) across
 algorithms, physics, biology, electronics, chemistry, machine-learning,
 and quantum. Streaming chat / generate / insert-step all work end-to-end.
@@ -14,8 +14,12 @@ place. Phase 2 added a Pyodide-backed Run pane: students execute the
 notebook's Python in-browser, inject scene primitives as globals, and
 save experiments as `.py` under `~/Teachbook/experiments/`.
 
-Not yet started: Phase 3 (bi-directional editing), Phase 4 (test mode).
-Current roadmap: [`docs/PLAN.md`](docs/PLAN.md).
+Phase 3 adds drag-to-edit on `shape` and `label` primitives — pointer
+updates the scene JSON in the source (with Undo). `src/lib/scene-edit.ts`
+owns the surgical fence replacement; `SceneRenderer` owns drag state.
+
+Not yet started: Phase 4 (test mode — teacher rubrics, student answers,
+Claude grading). Current roadmap: [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Documentation map
 
