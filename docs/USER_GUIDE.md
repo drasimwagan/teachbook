@@ -136,6 +136,48 @@ hit zero at the peak?"), request alternate examples ("redo this with an
 - The current notebook source (truncated to 6000 chars) and current step
   narration are injected into Claude's system prompt automatically
 
+## Settings & teaching server
+
+Click the **⚙** button in the header to open Settings. Two sections:
+
+### Teaching server (teacher mode)
+
+Flip **Start server** to publish every notebook in `~/Teachbook/notebooks/`
+that has `locked: true` in its frontmatter. The server listens on a TCP
+port (default 7480) and exposes:
+
+- `GET /api/ping` — identifies the server
+- `GET /api/quizzes` — lists published quiz metadata
+- `GET /api/quizzes/<id>` — returns the raw `.tbk`
+- `POST /api/submissions` — accepts a student's progress JSON
+- `GET /api/submissions` — lists received submissions (teacher-local)
+
+Received submissions land as JSON under `~/Teachbook/submissions/`.
+
+**Bind address** `0.0.0.0` exposes the server to your LAN; `127.0.0.1`
+keeps it loopback-only (useful for development). The header shows a
+small green dot next to the ⚙ button whenever the server is running.
+
+> ⚠️ **No authentication in the current MVP.** Anyone on the same network
+> who knows the URL can read your locked notebooks and post submissions.
+> Use only on a trusted classroom LAN; do not expose the port to the
+> public internet. HTTPS and auth are planned.
+
+### Connect to a teacher (student mode)
+
+Paste the teacher's URL (e.g. `http://192.168.1.10:7480`) and optionally
+a student name. Click **Test** to ping the server. After saving:
+
+- The Examples dialog gains a **From teacher** section listing published
+  quizzes
+- Clicking a teacher quiz downloads the `.tbk` and loads it locally
+- In test mode, a **→ Submit** button appears next to the progress
+  counter; click to POST your progress JSON to the teacher
+
+Submitting does not re-send previous submissions; each click posts a
+fresh copy keyed by timestamp. Teachers see them in
+`~/Teachbook/submissions/` in the order they arrived.
+
 ## Test mode
 
 Click **📝 Test** in the header to swap quiz cells from "show expected

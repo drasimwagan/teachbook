@@ -2,11 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { parseTbk } from "../lib/tbk-parser";
+import { getSettings } from "../lib/settings";
+import {
+  fetchTeacherQuiz,
+  listTeacherQuizzes,
+  type TeacherQuizMeta,
+} from "../lib/teaching-api";
 
 type BundledNotebook = { filename: string; content: string };
 type UserNotebook = { filename: string; path: string; content: string };
 
-type Source = "bundled" | "personal";
+type Source = "bundled" | "personal" | "teacher";
 
 type Card = {
   filename: string;
@@ -97,6 +103,9 @@ function applyFilter(
 export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
   const [bundled, setBundled] = useState<Card[] | null>(null);
   const [userLib, setUserLib] = useState<Card[] | null>(null);
+  const [teacherLib, setTeacherLib] = useState<Card[] | null>(null);
+  const [teacherUrl, setTeacherUrl] = useState<string | null>(null);
+  const [teacherError, setTeacherError] = useState<string | null>(null);
   const [userPath, setUserPath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -111,6 +120,9 @@ export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
     setError(null);
     setBundled(null);
     setUserLib(null);
+
+    setTeacherLib(null);
+    setTeacherError(null);
 
     Promise.all([
       invoke<BundledNotebook[]>("list_bundled_notebooks"),
@@ -129,11 +141,41 @@ export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
         setUserPath(path);
       })
       .catch((e) => setError(String(e)));
+
+    // Teacher library — best-effort. A missing server / unset URL is
+    // not an error, just an empty section.
+    (async () => {
+      try {
+        const s = await getSettings();
+        if (!s.teacher_url) {
+          setTeacherUrl(null);
+          setTeacherLib([]);
+          return;
+        }
+        setTeacherUrl(s.teacher_url);
+        const metas: TeacherQuizMeta[] = await listTeacherQuizzes(s.teacher_url);
+        const cards: Card[] = metas.map((m) => ({
+          filename: `${m.id}.tbk`,
+          // content lazy-fetched on click; seed with a placeholder
+          content: "",
+          title: m.title,
+          subject: m.subject || "—",
+          steps: 0,
+          summary: "Fetched from teacher — click to load.",
+          tags: m.tags,
+          source: "teacher",
+        }));
+        setTeacherLib(cards);
+      } catch (e) {
+        setTeacherError(e instanceof Error ? e.message : String(e));
+        setTeacherLib([]);
+      }
+    })();
   }, [open]);
 
   const allCards = useMemo<Card[]>(
-    () => [...(bundled ?? []), ...(userLib ?? [])],
-    [bundled, userLib],
+    () => [...(bundled ?? []), ...(userLib ?? []), ...(teacherLib ?? [])],
+    [bundled, userLib, teacherLib],
   );
   const subjects = useMemo(
     () => Array.from(new Set(allCards.map((c) => c.subject))).sort(),
@@ -153,6 +195,10 @@ export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
   const filteredUser = useMemo(
     () => applyFilter(userLib, sourceFilter, subjectFilter, tagFilter, query),
     [userLib, sourceFilter, subjectFilter, tagFilter, query],
+  );
+  const filteredTeacher = useMemo(
+    () => applyFilter(teacherLib, sourceFilter, subjectFilter, tagFilter, query),
+    [teacherLib, sourceFilter, subjectFilter, tagFilter, query],
   );
   const clearFilters = () => {
     setSourceFilter("all");
@@ -218,6 +264,12 @@ export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
             >
               Personal
             </FilterChip>
+            <FilterChip
+              active={sourceFilter === "teacher"}
+              onClick={() => setSourceFilter("teacher")}
+            >
+              From teacher
+            </FilterChip>
             <span className="mx-1 h-3 w-px bg-zinc-300 dark:bg-zinc-700" />
             {subjects.length > 0 && (
               <>
@@ -270,6 +322,42 @@ export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
               {error}
             </div>
           )}
+
+          <Section
+            title="From teacher"
+            cards={filteredTeacher}
+            onSelect={(_content, filename) => {
+              // Fetch the full .tbk on demand and forward it via onSelect.
+              const id = filename.replace(/\.tbk$/, "");
+              if (!teacherUrl) return;
+              fetchTeacherQuiz(teacherUrl, id)
+                .then((tbk) => onSelect(tbk, filename))
+                .catch((e) => setTeacherError(String(e)));
+            }}
+            subtitle={
+              teacherUrl ? (
+                <>
+                  Connected to{" "}
+                  <code className="font-mono">{teacherUrl}</code>.
+                  {teacherError && (
+                    <span className="ml-2 text-rose-600">
+                      (last error: {teacherError})
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  No teacher URL configured. Open{" "}
+                  <span className="font-semibold">⚙ Settings</span> to connect.
+                </>
+              )
+            }
+            emptyText={
+              teacherUrl
+                ? "The teacher has no published quizzes right now."
+                : "(teacher URL not set)"
+            }
+          />
 
           <Section
             title="Built-in examples"

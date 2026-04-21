@@ -1,6 +1,8 @@
 mod claude;
 mod examples;
 mod library;
+mod settings;
+mod teaching_server;
 
 use std::fs;
 use std::path::PathBuf;
@@ -9,6 +11,10 @@ use claude::{claude_cancel, claude_check, claude_prompt, claude_prompt_stream, C
 use examples::list_bundled_notebooks;
 use library::{
     list_user_notebooks, user_experiments_path, user_notebooks_path, user_progress_path,
+};
+use settings::{get_settings, set_settings};
+use teaching_server::{
+    start_teaching_server, stop_teaching_server, teaching_server_status, ServerState,
 };
 
 #[tauri::command]
@@ -34,6 +40,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(ClaudeState::default())
+        .manage(ServerState::default())
         .invoke_handler(tauri::generate_handler![
             load_notebook,
             save_notebook,
@@ -46,7 +53,12 @@ pub fn run() {
             list_user_notebooks,
             user_notebooks_path,
             user_experiments_path,
-            user_progress_path
+            user_progress_path,
+            get_settings,
+            set_settings,
+            start_teaching_server,
+            stop_teaching_server,
+            teaching_server_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

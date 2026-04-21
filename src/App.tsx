@@ -9,6 +9,9 @@ import GenerateDialog from "./components/GenerateDialog";
 import ExamplesDialog from "./components/ExamplesDialog";
 import InsertStepDialog from "./components/InsertStepDialog";
 import RunPane from "./components/RunPane";
+import SettingsDialog from "./components/SettingsDialog";
+import { getSettings, teachingServerStatus, type Settings } from "./lib/settings";
+import { submitToTeacher } from "./lib/teaching-api";
 import { parseTbk, type ParseDiagnostic } from "./lib/tbk-parser";
 import { updatePrimitiveInSource, type PrimitivePatch } from "./lib/scene-edit";
 import {
@@ -51,6 +54,9 @@ function App() {
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [insertAfter, setInsertAfter] = useState<number | null>(null);
   const [runOpen, setRunOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [serverRunning, setServerRunning] = useState<boolean>(false);
   const [testMode, setTestMode] = useState(false);
   const [progress, setProgress] = useState<TestProgress | null>(null);
   const [progressPath, setProgressPath] = useState<string | null>(null);
@@ -115,6 +121,30 @@ function App() {
     setNotebook(nb);
     setParseErrors(errors);
   }, []);
+
+  // Load persisted settings on boot + poll server status while the dialog
+  // isn't open (so the header pill stays accurate).
+  useEffect(() => {
+    getSettings().then(setSettings).catch(() => setSettings(null));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function poll() {
+      try {
+        const s = await teachingServerStatus();
+        if (!cancelled) setServerRunning(s.running);
+      } catch {
+        if (!cancelled) setServerRunning(false);
+      }
+    }
+    poll();
+    const id = window.setInterval(poll, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [settingsOpen]);
 
   // Debounced re-parse when source changes
   const parseTimer = useRef<number | null>(null);
@@ -364,6 +394,19 @@ function App() {
             Generate
           </button>
           <button
+            onClick={() => setSettingsOpen(true)}
+            className="relative rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            title="Settings — teaching server, teacher URL, student name"
+          >
+            ⚙
+            {serverRunning && (
+              <span
+                className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500"
+                title="Teaching server running"
+              />
+            )}
+          </button>
+          <button
             onClick={() => setTestMode((v) => !v)}
             className={
               "rounded px-2 py-1 text-sm " +
@@ -408,6 +451,36 @@ function App() {
                   </span>
                 );
               })()}
+              {progress && settings?.teacher_url && (
+                <button
+                  onClick={async () => {
+                    if (!progress || !settings?.teacher_url) return;
+                    try {
+                      const payload = {
+                        ...progress,
+                        student: settings.student_name ?? "anon",
+                      };
+                      const res = await submitToTeacher(
+                        settings.teacher_url,
+                        payload,
+                      );
+                      setParseErrors([
+                        {
+                          message: `Submitted to teacher (id: ${res.id}).`,
+                        },
+                      ]);
+                    } catch (e) {
+                      setParseErrors([
+                        { message: `Submit failed: ${String(e)}` },
+                      ]);
+                    }
+                  }}
+                  className="border-l border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  title={`Submit this progress to ${settings.teacher_url}`}
+                >
+                  → Submit
+                </button>
+              )}
             </div>
           )}
           <button
@@ -461,6 +534,13 @@ function App() {
         currentStep={currentStep}
         open={runOpen}
         onClose={() => setRunOpen(false)}
+      />
+      <SettingsDialog
+        open={settingsOpen}
+        onClose={() => {
+          setSettingsOpen(false);
+          getSettings().then(setSettings).catch(() => {});
+        }}
       />
       <GenerateDialog
         open={generateOpen}
