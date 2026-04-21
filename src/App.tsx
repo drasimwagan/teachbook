@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import ConceptPane from "./components/ConceptPane";
@@ -9,7 +9,11 @@ import GenerateDialog from "./components/GenerateDialog";
 import ExamplesDialog from "./components/ExamplesDialog";
 import InsertStepDialog from "./components/InsertStepDialog";
 import RunPane from "./components/RunPane";
-import SettingsDialog from "./components/SettingsDialog";
+// SettingsDialog + TeacherDashboard + UserGuideDialog are lazy-loaded so
+// react-markdown and the 30KB user guide stay out of the main bundle.
+const SettingsDialog = lazy(() => import("./components/SettingsDialog"));
+const TeacherDashboard = lazy(() => import("./components/TeacherDashboard"));
+const UserGuideDialog = lazy(() => import("./components/UserGuideDialog"));
 import { getSettings, teachingServerStatus, type Settings } from "./lib/settings";
 import { submitToTeacher } from "./lib/teaching-api";
 import { parseTbk, type ParseDiagnostic } from "./lib/tbk-parser";
@@ -49,12 +53,15 @@ function App() {
   const [currentStep, setCurrentStep] = useState(0);
   const [currentPath, setCurrentPath] = useState<string | null>(null);
   const [source, setSource] = useState<string>(WELCOME);
+  const [currentNotebookId, setCurrentNotebookId] = useState<string | null>(null);
   const [parseErrors, setParseErrors] = useState<ParseDiagnostic[]>([]);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [insertAfter, setInsertAfter] = useState<number | null>(null);
   const [runOpen, setRunOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [serverRunning, setServerRunning] = useState<boolean>(false);
   const [testMode, setTestMode] = useState(false);
@@ -175,6 +182,7 @@ function App() {
       snapshotAnd(`open ${name}`, () => {
         setSource(contents);
         setCurrentPath(selected);
+        setCurrentNotebookId(name.replace(/\.tbk$/i, ""));
         setCurrentStep(0);
       });
     } catch (e) {
@@ -407,6 +415,20 @@ function App() {
             )}
           </button>
           <button
+            onClick={() => setDashboardOpen(true)}
+            className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            title="Teacher dashboard — received submissions"
+          >
+            📊
+          </button>
+          <button
+            onClick={() => setGuideOpen(true)}
+            className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            title="User guide"
+          >
+            ?
+          </button>
+          <button
             onClick={() => setTestMode((v) => !v)}
             className={
               "rounded px-2 py-1 text-sm " +
@@ -456,14 +478,20 @@ function App() {
                   onClick={async () => {
                     if (!progress || !settings?.teacher_url) return;
                     try {
-                      const payload = {
+                      const payload: TestProgress = {
                         ...progress,
+                        notebookId:
+                          progress.notebookId ?? currentNotebookId ?? undefined,
                         student: settings.student_name ?? "anon",
+                        studentId: settings.student_id,
+                        submittedAt: new Date().toISOString(),
                       };
                       const res = await submitToTeacher(
                         settings.teacher_url,
                         payload,
                       );
+                      // Persist the updated submission metadata locally too.
+                      setProgress(payload);
                       setParseErrors([
                         {
                           message: `Submitted to teacher (id: ${res.id}).`,
@@ -535,13 +563,29 @@ function App() {
         open={runOpen}
         onClose={() => setRunOpen(false)}
       />
-      <SettingsDialog
-        open={settingsOpen}
-        onClose={() => {
-          setSettingsOpen(false);
-          getSettings().then(setSettings).catch(() => {});
-        }}
-      />
+      <Suspense fallback={null}>
+        {settingsOpen && (
+          <SettingsDialog
+            open={settingsOpen}
+            onClose={() => {
+              setSettingsOpen(false);
+              getSettings().then(setSettings).catch(() => {});
+            }}
+          />
+        )}
+        {dashboardOpen && (
+          <TeacherDashboard
+            open={dashboardOpen}
+            onClose={() => setDashboardOpen(false)}
+          />
+        )}
+        {guideOpen && (
+          <UserGuideDialog
+            open={guideOpen}
+            onClose={() => setGuideOpen(false)}
+          />
+        )}
+      </Suspense>
       <GenerateDialog
         open={generateOpen}
         onClose={() => setGenerateOpen(false)}
@@ -549,6 +593,7 @@ function App() {
           snapshotAnd("generate notebook", () => {
             setSource(tbk);
             setCurrentPath(null);
+            setCurrentNotebookId(null);
             setCurrentStep(0);
           });
         }}
@@ -560,6 +605,7 @@ function App() {
           snapshotAnd(`load ${filename}`, () => {
             setSource(tbk);
             setCurrentPath(path ?? null);
+            setCurrentNotebookId(filename.replace(/\.tbk$/i, ""));
             setCurrentStep(0);
           });
         }}

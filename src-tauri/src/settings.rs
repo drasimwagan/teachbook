@@ -41,6 +41,10 @@ pub struct Settings {
     /// Free-form identifier the student includes in submissions. Not a
     /// login — just a name field. No auth claim.
     pub student_name: Option<String>,
+    /// Optional student ID (e.g. a university or classroom roster id).
+    /// Kept separate from `student_name` so teachers can disambiguate
+    /// duplicate names.
+    pub student_id: Option<String>,
 }
 
 fn settings_path() -> Result<PathBuf, String> {

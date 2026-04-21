@@ -467,6 +467,113 @@ pub fn stop_teaching_server(state: tauri::State<'_, ServerState>) -> Result<(), 
     Ok(())
 }
 
+// --- Local submissions viewer (teacher dashboard) --------------------------
+// These commands let the teacher's own Teachbook UI browse the submissions
+// directory directly — no HTTP round-trip. Paired with the HTTP endpoints
+// above which remote students use.
+
+#[derive(Serialize)]
+pub struct LocalSubmission {
+    pub id: String,
+    pub path: String,
+    pub received_at: String,
+    pub notebook_id: Option<String>,
+    pub notebook_title: Option<String>,
+    pub student: Option<String>,
+    pub student_id: Option<String>,
+    pub started_at: Option<String>,
+    pub submitted_at: Option<String>,
+    pub correct: usize,
+    pub attempted: usize,
+}
+
+#[tauri::command]
+pub fn list_local_submissions() -> Result<Vec<LocalSubmission>, String> {
+    let dir = teachbook_subdir("submissions")?;
+    let mut out: Vec<LocalSubmission> = Vec::new();
+    let entries = std::fs::read_dir(&dir)
+        .map_err(|e| format!("read submissions dir: {e}"))?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        let id = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_string();
+        let meta = std::fs::metadata(&path).ok();
+        let received_at = meta
+            .as_ref()
+            .and_then(|m| m.modified().ok())
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| {
+                chrono::DateTime::<chrono::Utc>::from_timestamp(d.as_secs() as i64, 0)
+                    .map(|t| t.to_rfc3339())
+                    .unwrap_or_default()
+            })
+            .unwrap_or_default();
+        let raw = std::fs::read_to_string(&path).unwrap_or_default();
+        let v: serde_json::Value = serde_json::from_str(&raw).unwrap_or_default();
+        let notebook_id = v
+            .get("notebookId")
+            .and_then(|s| s.as_str())
+            .map(|s| s.to_string());
+        let notebook_title = v
+            .get("notebookTitle")
+            .and_then(|s| s.as_str())
+            .map(|s| s.to_string());
+        let student = v
+            .get("student")
+            .and_then(|s| s.as_str())
+            .map(|s| s.to_string());
+        let student_id = v
+            .get("studentId")
+            .and_then(|s| s.as_str())
+            .map(|s| s.to_string());
+        let started_at = v
+            .get("startedAt")
+            .and_then(|s| s.as_str())
+            .map(|s| s.to_string());
+        let submitted_at = v
+            .get("submittedAt")
+            .and_then(|s| s.as_str())
+            .map(|s| s.to_string());
+        let (correct, attempted) = count_grade(&v);
+        out.push(LocalSubmission {
+            id,
+            path: path.to_string_lossy().to_string(),
+            received_at,
+            notebook_id,
+            notebook_title,
+            student,
+            student_id,
+            started_at,
+            submitted_at,
+            correct,
+            attempted,
+        });
+    }
+    // Most recently received first.
+    out.sort_by(|a, b| b.received_at.cmp(&a.received_at));
+    Ok(out)
+}
+
+#[tauri::command]
+pub fn read_local_submission(id: String) -> Result<String, String> {
+    // Prevent traversal: id must be a plain filename stem.
+    if id.contains('/') || id.contains('\\') || id.contains("..") {
+        return Err("invalid id".into());
+    }
+    let dir = teachbook_subdir("submissions")?;
+    let path = dir.join(format!("{id}.json"));
+    if !path.exists() {
+        return Err(format!("no submission with id '{id}'"));
+    }
+    std::fs::read_to_string(&path).map_err(|e| format!("read: {e}"))
+}
+
 #[tauri::command]
 pub fn teaching_server_status(state: tauri::State<'_, ServerState>) -> ServerStatus {
     let guard = state.inner.lock().unwrap();

@@ -282,27 +282,46 @@ export default function SettingsDialog({ open, onClose }: Props) {
                     )}
                   </label>
 
-                  <label className="text-xs block">
-                    <span className="block mb-1 text-zinc-600 dark:text-zinc-400">
-                      Your name (sent with submissions)
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="e.g. alice"
-                      value={settings.student_name ?? ""}
-                      onChange={(e) =>
-                        setLocalSettings({
-                          ...settings,
-                          student_name: e.target.value || undefined,
-                        })
-                      }
-                      className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-2 py-1 text-sm"
-                    />
-                    <span className="block mt-1 text-[10px] text-zinc-500">
-                      Free-form label. No authentication — the server accepts
-                      whatever name you type.
-                    </span>
-                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="text-xs">
+                      <span className="block mb-1 text-zinc-600 dark:text-zinc-400">
+                        Your name
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="e.g. alice"
+                        value={settings.student_name ?? ""}
+                        onChange={(e) =>
+                          setLocalSettings({
+                            ...settings,
+                            student_name: e.target.value || undefined,
+                          })
+                        }
+                        className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-2 py-1 text-sm"
+                      />
+                    </label>
+                    <label className="text-xs">
+                      <span className="block mb-1 text-zinc-600 dark:text-zinc-400">
+                        Student ID
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="e.g. s-2025-0142"
+                        value={settings.student_id ?? ""}
+                        onChange={(e) =>
+                          setLocalSettings({
+                            ...settings,
+                            student_id: e.target.value || undefined,
+                          })
+                        }
+                        className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-2 py-1 text-sm font-mono"
+                      />
+                    </label>
+                  </div>
+                  <span className="block text-[10px] text-zinc-500">
+                    Both are sent with every submission. No authentication —
+                    the teacher's server accepts whatever you type.
+                  </span>
                 </div>
               </section>
             </>

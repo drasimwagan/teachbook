@@ -10,6 +10,7 @@ export type Settings = {
   teaching_server: TeachingServerConfig;
   teacher_url?: string;
   student_name?: string;
+  student_id?: string;
 };
 
 export const DEFAULT_SETTINGS: Settings = {

@@ -14,7 +14,8 @@ use library::{
 };
 use settings::{get_settings, set_settings};
 use teaching_server::{
-    start_teaching_server, stop_teaching_server, teaching_server_status, ServerState,
+    list_local_submissions, read_local_submission, start_teaching_server, stop_teaching_server,
+    teaching_server_status, ServerState,
 };
 
 #[tauri::command]
@@ -58,7 +59,9 @@ pub fn run() {
             set_settings,
             start_teaching_server,
             stop_teaching_server,
-            teaching_server_status
+            teaching_server_status,
+            list_local_submissions,
+            read_local_submission
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

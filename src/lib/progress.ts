@@ -16,10 +16,20 @@ export type QuizAnswer = {
 
 export type TestProgress = {
   version: 1;
+  /** Stable identifier of the test/notebook — for teacher tracking when
+   *  students have multiple attempts of the same assignment. Filled at
+   *  load time from the notebook's filename (sans `.tbk`). */
+  notebookId?: string;
   notebookTitle: string;
   notebookSubject: string;
-  student?: string; // optional free-form identifier (filled by the student before saving)
-  startedAt: string; // ISO
+  /** Free-form student name from settings (copied in at submit time). */
+  student?: string;
+  /** Optional student ID from settings. */
+  studentId?: string;
+  /** ISO. Set when the student starts answering. */
+  startedAt: string;
+  /** ISO. Set at submit time — when the student POSTed to the teacher. */
+  submittedAt?: string;
   answers: QuizAnswer[];
 };
 
