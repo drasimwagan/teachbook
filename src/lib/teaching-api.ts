@@ -66,3 +66,21 @@ export async function submitToTeacher(
   });
   return (await jsonOrThrow(res)) as { ok: boolean; id: string };
 }
+
+export type QuizPush = {
+  id: string;
+  notebook_id: string;
+  notebook_title: string;
+  message?: string | null;
+  pushed_at: string;
+};
+
+export async function listPushesFromTeacher(
+  url: string,
+  since?: string,
+): Promise<QuizPush[]> {
+  const qs = since ? `?since=${encodeURIComponent(since)}` : "";
+  const res = await fetch(`${trim(url)}/api/pushes${qs}`);
+  return (await jsonOrThrow(res)) as QuizPush[];
+}
+

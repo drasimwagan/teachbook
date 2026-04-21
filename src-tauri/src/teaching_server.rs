@@ -14,13 +14,14 @@
 //! key, which is robust enough for our frontmatter shape.
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::{header, StatusCode},
     response::{IntoResponse, Response},
     routing::{get, post},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -32,6 +33,7 @@ use tower_http::cors::{Any, CorsLayer};
 struct AppState {
     notebooks_dir: PathBuf,
     submissions_dir: PathBuf,
+    pushes_dir: PathBuf,
 }
 
 fn teachbook_subdir(name: &str) -> Result<PathBuf, String> {
@@ -403,8 +405,164 @@ fn make_router(state: AppState) -> Router {
         .route("/api/quizzes", get(list_quizzes))
         .route("/api/quizzes/:id", get(get_quiz))
         .route("/api/submissions", post(post_submission).get(list_submissions))
+        .route("/api/pushes", get(list_pushes_http))
         .with_state(state)
         .layer(cors)
+}
+
+// --- Push endpoint + helpers ----------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QuizPush {
+    pub id: String,
+    pub notebook_id: String,
+    pub notebook_title: String,
+    pub message: Option<String>,
+    pub pushed_at: String, // ISO-8601 UTC
+}
+
+fn read_pushes_from_dir(dir: &std::path::Path) -> Vec<QuizPush> {
+    let mut out: Vec<QuizPush> = Vec::new();
+    let entries = match std::fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return out,
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        if let Ok(raw) = std::fs::read_to_string(&path) {
+            if let Ok(p) = serde_json::from_str::<QuizPush>(&raw) {
+                out.push(p);
+            }
+        }
+    }
+    // Newest first — pushed_at is ISO so lexicographic == chronological.
+    out.sort_by(|a, b| b.pushed_at.cmp(&a.pushed_at));
+    out
+}
+
+async fn list_pushes_http(
+    State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<Vec<QuizPush>>, ApiError> {
+    let mut pushes = read_pushes_from_dir(&state.pushes_dir);
+    if let Some(since) = params.get("since") {
+        pushes.retain(|p| p.pushed_at.as_str() > since.as_str());
+    }
+    Ok(Json(pushes))
+}
+
+// --- Local (Tauri-side) push commands: teacher fires these from their UI.
+
+#[tauri::command]
+pub fn push_quiz(
+    notebook_id: String,
+    message: Option<String>,
+) -> Result<QuizPush, String> {
+    // Validate the notebook exists + is locked.
+    let safe = notebook_id
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
+    if !safe {
+        return Err("invalid notebook_id".into());
+    }
+    let notebooks_dir = teachbook_subdir("notebooks")?;
+    let path = notebooks_dir.join(format!("{notebook_id}.tbk"));
+    if !path.exists() {
+        return Err(format!("no notebook with id '{notebook_id}'"));
+    }
+    let content = std::fs::read_to_string(&path)
+        .map_err(|e| format!("read: {e}"))?;
+    let fm = parse_frontmatter(&content);
+    if !fm.locked {
+        return Err("notebook is not locked — only locked notebooks can be pushed".into());
+    }
+
+    let pushed_at = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let id = format!(
+        "{}-{}",
+        chrono::Utc::now().format("%Y%m%dT%H%M%SZ"),
+        slugify(&notebook_id),
+    );
+    let push = QuizPush {
+        id: id.clone(),
+        notebook_id,
+        notebook_title: fm.title.unwrap_or_else(|| "Untitled".to_string()),
+        message,
+        pushed_at,
+    };
+    let pushes_dir = teachbook_subdir("pushes")?;
+    let file_path = pushes_dir.join(format!("{id}.json"));
+    let pretty = serde_json::to_string_pretty(&push)
+        .map_err(|e| format!("serialize: {e}"))?;
+    std::fs::write(&file_path, pretty)
+        .map_err(|e| format!("write push: {e}"))?;
+    Ok(push)
+}
+
+#[tauri::command]
+pub fn list_local_pushes() -> Result<Vec<QuizPush>, String> {
+    let dir = teachbook_subdir("pushes")?;
+    Ok(read_pushes_from_dir(&dir))
+}
+
+#[tauri::command]
+pub fn delete_local_push(id: String) -> Result<(), String> {
+    if id.contains('/') || id.contains('\\') || id.contains("..") {
+        return Err("invalid id".into());
+    }
+    let dir = teachbook_subdir("pushes")?;
+    let path = dir.join(format!("{id}.json"));
+    if path.exists() {
+        std::fs::remove_file(&path).map_err(|e| format!("delete: {e}"))?;
+    }
+    Ok(())
+}
+
+/// Teacher-side helper used by the Publish panel — mirrors the
+/// frontmatter-checking logic in the HTTP list_quizzes endpoint.
+#[tauri::command]
+pub fn list_local_published() -> Result<Vec<serde_json::Value>, String> {
+    let notebooks_dir = teachbook_subdir("notebooks")?;
+    let mut out: Vec<serde_json::Value> = Vec::new();
+    let entries = std::fs::read_dir(&notebooks_dir)
+        .map_err(|e| format!("read notebooks dir: {e}"))?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        if ext != "tbk" && ext != "md" {
+            continue;
+        }
+        let content = match std::fs::read_to_string(&path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        let meta = parse_frontmatter(&content);
+        if !meta.locked {
+            continue;
+        }
+        let id = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("unnamed")
+            .to_string();
+        out.push(serde_json::json!({
+            "id": id,
+            "title": meta.title.unwrap_or_else(|| "Untitled".to_string()),
+            "subject": meta.subject.unwrap_or_default(),
+            "tags": meta.tags,
+        }));
+    }
+    Ok(out)
 }
 
 #[tauri::command]
@@ -421,9 +579,11 @@ pub async fn start_teaching_server(
     }
     let notebooks_dir = teachbook_subdir("notebooks")?;
     let submissions_dir = teachbook_subdir("submissions")?;
+    let pushes_dir = teachbook_subdir("pushes")?;
     let app_state = AppState {
         notebooks_dir,
         submissions_dir,
+        pushes_dir,
     };
     let addr: SocketAddr = format!("{}:{}", bind_address, port)
         .parse()

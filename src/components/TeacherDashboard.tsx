@@ -17,6 +17,21 @@ type LocalSubmission = {
   attempted: number;
 };
 
+type PublishedQuiz = {
+  id: string;
+  title: string;
+  subject: string;
+  tags: string[];
+};
+
+type PushRecord = {
+  id: string;
+  notebook_id: string;
+  notebook_title: string;
+  message?: string | null;
+  pushed_at: string;
+};
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -41,6 +56,63 @@ export default function TeacherDashboard({ open, onClose }: Props) {
   const [studentFilter, setStudentFilter] = useState<string>("");
   const [testFilter, setTestFilter] = useState<string | null>(null);
 
+  // Publish panel state
+  const [publishedQuizzes, setPublishedQuizzes] = useState<PublishedQuiz[]>([]);
+  const [pushTarget, setPushTarget] = useState<string>("");
+  const [pushMessage, setPushMessage] = useState<string>("");
+  const [pushes, setPushes] = useState<PushRecord[]>([]);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushFlash, setPushFlash] = useState<
+    { kind: "ok" | "err"; text: string } | null
+  >(null);
+
+  const refreshPublishPanel = useCallback(async () => {
+    try {
+      const [quizzes, existing] = await Promise.all([
+        invoke<PublishedQuiz[]>("list_local_published"),
+        invoke<PushRecord[]>("list_local_pushes"),
+      ]);
+      setPublishedQuizzes(quizzes);
+      setPushes(existing);
+      if (!pushTarget && quizzes.length > 0) {
+        setPushTarget(quizzes[0].id);
+      }
+    } catch (e) {
+      setPushFlash({ kind: "err", text: String(e) });
+    }
+  }, [pushTarget]);
+
+  const onPush = useCallback(async () => {
+    if (!pushTarget) return;
+    setPushBusy(true);
+    setPushFlash(null);
+    try {
+      const record = await invoke<PushRecord>("push_quiz", {
+        notebookId: pushTarget,
+        message: pushMessage.trim() || null,
+      });
+      setPushes((prev) => [record, ...prev]);
+      setPushFlash({
+        kind: "ok",
+        text: `Pushed "${record.notebook_title}" to connected students.`,
+      });
+      setPushMessage("");
+    } catch (e) {
+      setPushFlash({ kind: "err", text: String(e) });
+    } finally {
+      setPushBusy(false);
+    }
+  }, [pushTarget, pushMessage]);
+
+  const onDeletePush = useCallback(async (id: string) => {
+    try {
+      await invoke("delete_local_push", { id });
+      setPushes((prev) => prev.filter((p) => p.id !== id));
+    } catch (e) {
+      setPushFlash({ kind: "err", text: String(e) });
+    }
+  }, []);
+
   const refresh = useCallback(async () => {
     setError(null);
     try {
@@ -57,7 +129,8 @@ export default function TeacherDashboard({ open, onClose }: Props) {
     setSelectedId(null);
     setDetail(null);
     refresh();
-  }, [open, refresh]);
+    refreshPublishPanel();
+  }, [open, refresh, refreshPublishPanel]);
 
   // Auto-refresh every 3s while the dashboard is open. Cheap: we're only
   // enumerating a directory on the local disk.
@@ -140,6 +213,107 @@ export default function TeacherDashboard({ open, onClose }: Props) {
             </button>
           </div>
         </header>
+
+        {/* Publish panel — push a locked notebook to connected students. */}
+        <details className="border-b border-zinc-200 dark:border-zinc-800 shrink-0 bg-blue-50/40 dark:bg-blue-950/20">
+          <summary className="cursor-pointer px-4 py-2 text-xs font-semibold flex items-center gap-2">
+            <span className="text-blue-700 dark:text-blue-300">
+              📣 Push to students
+            </span>
+            <span className="text-zinc-500 font-normal">
+              ({publishedQuizzes.length} published ·{" "}
+              {pushes.length} previous push{pushes.length === 1 ? "" : "es"})
+            </span>
+            {pushFlash && (
+              <span
+                className={
+                  "ml-auto text-[11px] tabular-nums font-normal " +
+                  (pushFlash.kind === "ok"
+                    ? "text-emerald-700 dark:text-emerald-300"
+                    : "text-rose-700 dark:text-rose-300")
+                }
+              >
+                {pushFlash.kind === "ok" ? "✓" : "✗"} {pushFlash.text}
+              </span>
+            )}
+          </summary>
+          <div className="px-4 pb-3 space-y-2 text-xs">
+            {publishedQuizzes.length === 0 ? (
+              <div className="text-zinc-500 italic">
+                No locked notebooks in your library. Add{" "}
+                <code className="font-mono">locked: true</code> to a notebook&apos;s
+                frontmatter and save it to{" "}
+                <code className="font-mono">~/Teachbook/notebooks/</code>.
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={pushTarget}
+                    onChange={(e) => setPushTarget(e.target.value)}
+                    className="flex-1 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-2 py-1 text-sm"
+                  >
+                    {publishedQuizzes.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.title} — {q.id}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Optional message (e.g. 'Due 5 min.')"
+                    value={pushMessage}
+                    onChange={(e) => setPushMessage(e.target.value)}
+                    className="flex-1 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-2 py-1 text-sm"
+                  />
+                  <button
+                    onClick={onPush}
+                    disabled={pushBusy || !pushTarget}
+                    className="rounded bg-blue-600 text-white px-3 py-1 text-xs hover:bg-blue-700 disabled:opacity-40"
+                  >
+                    {pushBusy ? "Pushing…" : "→ Push"}
+                  </button>
+                </div>
+                {pushes.length > 0 && (
+                  <div className="max-h-32 overflow-auto rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <table className="w-full">
+                      <tbody>
+                        {pushes.map((p) => (
+                          <tr
+                            key={p.id}
+                            className="border-b border-zinc-100 dark:border-zinc-800 last:border-b-0"
+                          >
+                            <td className="px-2 py-1 font-mono text-[10px] text-zinc-500 whitespace-nowrap">
+                              {fmtDate(p.pushed_at)}
+                            </td>
+                            <td className="px-2 py-1">{p.notebook_title}</td>
+                            <td className="px-2 py-1 text-zinc-500 italic">
+                              {p.message ?? ""}
+                            </td>
+                            <td className="px-2 py-1 w-8">
+                              <button
+                                onClick={() => onDeletePush(p.id)}
+                                className="text-zinc-400 hover:text-rose-600"
+                                title="Withdraw this push — existing clients keep what they already downloaded"
+                              >
+                                ×
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <div className="text-[10px] text-zinc-500">
+                  Students poll <code className="font-mono">/api/pushes</code>{" "}
+                  every 15 s when their teacher URL is set. They see a banner
+                  with Load / Dismiss buttons.
+                </div>
+              </>
+            )}
+          </div>
+        </details>
 
         <div className="border-b border-zinc-200 dark:border-zinc-800 px-4 py-2 shrink-0 flex items-center gap-2 text-xs">
           <input

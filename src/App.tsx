@@ -15,7 +15,12 @@ const SettingsDialog = lazy(() => import("./components/SettingsDialog"));
 const TeacherDashboard = lazy(() => import("./components/TeacherDashboard"));
 const UserGuideDialog = lazy(() => import("./components/UserGuideDialog"));
 import { getSettings, teachingServerStatus, type Settings } from "./lib/settings";
-import { submitToTeacher } from "./lib/teaching-api";
+import {
+  fetchTeacherQuiz,
+  listPushesFromTeacher,
+  submitToTeacher,
+  type QuizPush,
+} from "./lib/teaching-api";
 import { parseTbk, type ParseDiagnostic } from "./lib/tbk-parser";
 import { updatePrimitiveInSource, type PrimitivePatch } from "./lib/scene-edit";
 import {
@@ -68,6 +73,26 @@ function App() {
     | null
   >(null);
   const submitFlashTimer = useRef<number | null>(null);
+  const [teacherPushes, setTeacherPushes] = useState<QuizPush[]>([]);
+  const [dismissedPushIds, setDismissedPushIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("teachbook.dismissedPushes");
+      if (raw) return new Set(JSON.parse(raw) as string[]);
+    } catch {
+      // ignore malformed localStorage
+    }
+    return new Set();
+  });
+  const persistDismissed = useCallback((ids: Set<string>) => {
+    try {
+      localStorage.setItem(
+        "teachbook.dismissedPushes",
+        JSON.stringify([...ids]),
+      );
+    } catch {
+      // localStorage quota — not fatal, the banner just won't remember.
+    }
+  }, []);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [serverRunning, setServerRunning] = useState<boolean>(false);
   const [testMode, setTestMode] = useState(false);
@@ -158,6 +183,71 @@ function App() {
       window.clearInterval(id);
     };
   }, [settingsOpen]);
+
+  // Student-side: poll the teacher's /api/pushes every 15s when a teacher
+  // URL is configured. New (not-yet-dismissed) pushes surface as a banner.
+  useEffect(() => {
+    const url = settings?.teacher_url;
+    if (!url) {
+      setTeacherPushes([]);
+      return;
+    }
+    let cancelled = false;
+    async function poll() {
+      try {
+        const list = await listPushesFromTeacher(url!);
+        if (!cancelled) setTeacherPushes(list);
+      } catch {
+        // Teacher may be offline; silent — banner just stays empty.
+      }
+    }
+    poll();
+    const id = window.setInterval(poll, 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [settings?.teacher_url]);
+
+  const visiblePush: QuizPush | null = useMemo(() => {
+    return teacherPushes.find((p) => !dismissedPushIds.has(p.id)) ?? null;
+  }, [teacherPushes, dismissedPushIds]);
+
+  const onLoadPush = useCallback(
+    async (push: QuizPush) => {
+      const url = settings?.teacher_url;
+      if (!url) return;
+      try {
+        const tbk = await fetchTeacherQuiz(url, push.notebook_id);
+        snapshotAnd(`load push ${push.notebook_id}`, () => {
+          setSource(tbk);
+          setCurrentPath(null);
+          setCurrentNotebookId(push.notebook_id);
+          setCurrentStep(0);
+        });
+        // Auto-dismiss once loaded so the banner disappears.
+        const next = new Set(dismissedPushIds);
+        next.add(push.id);
+        setDismissedPushIds(next);
+        persistDismissed(next);
+      } catch (e) {
+        setParseErrors([
+          { message: `Load push failed: ${String(e)}` },
+        ]);
+      }
+    },
+    [settings?.teacher_url, snapshotAnd, dismissedPushIds, persistDismissed],
+  );
+
+  const onDismissPush = useCallback(
+    (push: QuizPush) => {
+      const next = new Set(dismissedPushIds);
+      next.add(push.id);
+      setDismissedPushIds(next);
+      persistDismissed(next);
+    },
+    [dismissedPushIds, persistDismissed],
+  );
 
   // Debounced re-parse when source changes
   const parseTimer = useRef<number | null>(null);
@@ -553,6 +643,36 @@ function App() {
           />
         </div>
       </header>
+
+      {visiblePush && (
+        <div className="flex items-center gap-3 px-4 py-2 border-b border-blue-300 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/60 text-sm">
+          <span className="text-blue-700 dark:text-blue-300 font-semibold">
+            📣 Teacher pushed:
+          </span>
+          <span className="font-medium truncate">
+            {visiblePush.notebook_title}
+          </span>
+          {visiblePush.message && (
+            <span className="text-zinc-600 dark:text-zinc-400 italic truncate">
+              — {visiblePush.message}
+            </span>
+          )}
+          <span className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => onLoadPush(visiblePush)}
+              className="rounded bg-blue-600 text-white px-2 py-0.5 text-xs hover:bg-blue-700"
+            >
+              Load now
+            </button>
+            <button
+              onClick={() => onDismissPush(visiblePush)}
+              className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-0.5 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
+              Dismiss
+            </button>
+          </span>
+        </div>
+      )}
 
       <main className="grid flex-1 grid-cols-[1fr_1fr_360px] overflow-hidden">
         <ConceptPane
