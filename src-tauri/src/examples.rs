@@ -23,6 +23,7 @@ const QUBIT_GATES: &str = include_str!("../../notebooks/qubit-gates.tbk");
 const RC_CIRCUIT_SCHEMATIC: &str = include_str!("../../notebooks/rc-circuit-schematic.tbk");
 const VOLTAGE_DIVIDER: &str = include_str!("../../notebooks/voltage-divider.tbk");
 const RLC_RESONANCE: &str = include_str!("../../notebooks/rlc-resonance.tbk");
+const QUIZ_SAMPLER: &str = include_str!("../../notebooks/quiz-sampler.tbk");
 
 #[tauri::command]
 pub fn list_bundled_notebooks() -> Vec<BundledNotebook> {
@@ -101,6 +102,10 @@ pub fn list_bundled_notebooks() -> Vec<BundledNotebook> {
         BundledNotebook {
             filename: "rlc-resonance.tbk".into(),
             content: RLC_RESONANCE.into(),
+        },
+        BundledNotebook {
+            filename: "quiz-sampler.tbk".into(),
+            content: QUIZ_SAMPLER.into(),
         },
     ]
 }

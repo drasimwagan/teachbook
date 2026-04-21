@@ -117,6 +117,11 @@ export default function ConceptPane({
     pushDiagnostics(view, errors);
   }, [errors, mode]);
 
+  // Highlight the active scene range on every change — cheap, idempotent.
+  // We key on the tuple's values, not its identity, so a re-parse that leaves
+  // the line range unchanged does NOT re-dispatch.
+  const rangeStart = activeSceneRange?.[0] ?? null;
+  const rangeEnd = activeSceneRange?.[1] ?? null;
   useEffect(() => {
     if (mode !== "edit") return;
     const view = ref.current?.view;
@@ -124,20 +129,38 @@ export default function ConceptPane({
     view.dispatch({
       effects: setHighlightRangeEffect.of(activeSceneRange ?? null),
     });
-    if (activeSceneRange) {
-      try {
-        const [start] = activeSceneRange;
-        const line = view.state.doc.line(
-          Math.max(1, Math.min(view.state.doc.lines, start)),
-        );
-        view.dispatch({
-          effects: EditorView.scrollIntoView(line.from, { y: "center" }),
-        });
-      } catch {
-        // range out of doc (stale parse), ignore
-      }
+  }, [rangeStart, rangeEnd, mode]);
+
+  // Scroll to the active scene ONLY when the user navigates to a different
+  // step (Next / Prev / click-a-step). Typing inside a scene would otherwise
+  // re-center the viewport on every re-parse and make the cursor feel like
+  // it's jumping — that's the bug the user flagged.
+  const lastScrolledStep = useRef<number | null>(null);
+  useEffect(() => {
+    if (mode !== "edit") return;
+    if (lastScrolledStep.current === currentStep) return;
+    lastScrolledStep.current = currentStep;
+    const view = ref.current?.view;
+    if (!view || !activeSceneRange) return;
+    try {
+      const [start] = activeSceneRange;
+      const line = view.state.doc.line(
+        Math.max(1, Math.min(view.state.doc.lines, start)),
+      );
+      view.dispatch({
+        effects: EditorView.scrollIntoView(line.from, { y: "center" }),
+      });
+    } catch {
+      // range out of doc (stale parse), ignore
     }
-  }, [activeSceneRange, mode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, mode]);
+
+  // Reset the step-scroll memo when leaving edit mode so returning to the
+  // same step after switching to Read still scrolls.
+  useEffect(() => {
+    if (mode !== "edit") lastScrolledStep.current = null;
+  }, [mode]);
 
   // Seed cursor state once the editor first mounts in edit mode.
   useEffect(() => {

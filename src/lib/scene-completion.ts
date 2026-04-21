@@ -1,7 +1,93 @@
-import type { CompletionContext, CompletionResult } from "@codemirror/autocomplete";
+import type {
+  Completion,
+  CompletionContext,
+  CompletionResult,
+} from "@codemirror/autocomplete";
 import type { EditorState } from "@codemirror/state";
 import { hoverTooltip } from "@codemirror/view";
 import { listPlugins } from "../plugins";
+
+/** Ready-to-insert primitive templates. Triggered when the user is at an
+ *  array slot inside a `primitives` list (after `[` or `,`). Each template
+ *  is a minimal, visually-meaningful skeleton — authors can tweak numbers
+ *  without having to remember the JSON shape. */
+const PRIMITIVE_SNIPPETS: { label: string; snippet: string; detail: string }[] = [
+  {
+    label: "shape (circle)",
+    snippet: `{"type":"shape","shape":"circle","x":400,"y":250,"radius":20,"fill":"#60a5fa"}`,
+    detail: "core",
+  },
+  {
+    label: "shape (rect)",
+    snippet: `{"type":"shape","shape":"rect","x":400,"y":250,"width":60,"height":40,"fill":"#60a5fa"}`,
+    detail: "core",
+  },
+  {
+    label: "label",
+    snippet: `{"type":"label","x":400,"y":250,"text":"edit me"}`,
+    detail: "core",
+  },
+  {
+    label: "label (LaTeX)",
+    snippet: `{"type":"label","x":400,"y":250,"text":"E = mc^2","latex":true}`,
+    detail: "core",
+  },
+  {
+    label: "arrow",
+    snippet: `{"type":"arrow","from":[100,250],"to":[400,250],"label":"v"}`,
+    detail: "core",
+  },
+  {
+    label: "grid",
+    snippet: `{"type":"grid","values":[1,2,3,4,5],"highlight":[2]}`,
+    detail: "core",
+  },
+  {
+    label: "axes",
+    snippet: `{"type":"axes","xMin":0,"xMax":10,"yMin":0,"yMax":10}`,
+    detail: "core",
+  },
+  {
+    label: "plot",
+    snippet: `{"type":"plot","points":[[0,0],[1,1],[2,4],[3,9]],"label":"y = x^2"}`,
+    detail: "core",
+  },
+  {
+    label: "matrix",
+    snippet: `{"type":"matrix","rows":[[0,0,0],[0,1,0],[0,0,0]],"highlight":[[1,1]]}`,
+    detail: "core",
+  },
+  {
+    label: "graph",
+    snippet: `{"type":"graph","nodes":[{"id":"A","x":200,"y":250},{"id":"B","x":500,"y":250}],"edges":[{"from":"A","to":"B","weight":3}]}`,
+    detail: "core",
+  },
+  {
+    label: "molecule",
+    snippet: `{"type":"molecule","atoms":[{"id":"c","element":"C","x":400,"y":250},{"id":"h1","element":"H","x":460,"y":210}],"bonds":[{"from":"c","to":"h1"}]}`,
+    detail: "plugin",
+  },
+  {
+    label: "nn",
+    snippet: `{"type":"nn","layers":[{"size":2},{"size":3,"activations":[0.3,0.7,0.1]},{"size":1}]}`,
+    detail: "plugin",
+  },
+  {
+    label: "heatmap",
+    snippet: `{"type":"heatmap","values":[[0,0.5,1],[0.5,1,0.5],[1,0.5,0]],"colormap":"viridis"}`,
+    detail: "plugin",
+  },
+  {
+    label: "bloch",
+    snippet: `{"type":"bloch","state":{"theta":0.5,"phi":0.25},"label":"|+⟩"}`,
+    detail: "plugin",
+  },
+  {
+    label: "circuit",
+    snippet: `{"type":"circuit","elements":[{"kind":"battery","from":[150,330],"to":[150,140],"label":"9 V"},{"kind":"wire","from":[150,140],"to":[450,140]},{"kind":"resistor","from":[450,140],"to":[450,330],"label":"R"},{"kind":"wire","from":[450,330],"to":[150,330]}]}`,
+    detail: "plugin",
+  },
+];
 
 // Core primitive types — these are built into SceneRenderer directly.
 const CORE_TYPES: { name: string; description: string }[] = [
@@ -75,6 +161,13 @@ const COMMON_KEYS = [
   "yMax",
 ];
 
+/** Slice up to `n` characters ending at `pos`, across line boundaries.
+ *  Used for contexts where a relevant token (like `[` or `,`) may live on
+ *  a previous line — e.g. `[\n  {...},\n  <cursor>`. */
+function sliceBack(state: EditorState, pos: number, n: number): string {
+  return state.sliceDoc(Math.max(0, pos - n), pos);
+}
+
 /** True iff `pos` lies inside the body of a ```scene fence. */
 function isInsideSceneFence(state: EditorState, pos: number): boolean {
   const lineNumber = state.doc.lineAt(pos).number;
@@ -101,6 +194,29 @@ export function sceneCompletions(
   if (!isInsideSceneFence(ctx.state, ctx.pos)) return null;
   const line = ctx.state.doc.lineAt(ctx.pos);
   const before = ctx.state.sliceDoc(line.from, ctx.pos);
+
+  // Primitive skeleton at an array slot: trigger when the cursor is right
+  // after `[` or `,` (optionally followed by whitespace/newlines) and the
+  // user has typed zero or more word characters. Inserts a full JSON object.
+  // Explicit trigger (Ctrl+Space) always wins even with no word typed.
+  const arrayPrefix = sliceBack(ctx.state, ctx.pos, 200);
+  const arraySlotMatch = arrayPrefix.match(/[[,]\s*(\w*)$/);
+  if (arraySlotMatch && (ctx.explicit || arraySlotMatch[1].length > 0)) {
+    const typed = arraySlotMatch[1];
+    const options: Completion[] = PRIMITIVE_SNIPPETS.map((s) => ({
+      label: s.label,
+      detail: s.detail,
+      type: "class",
+      info: s.snippet,
+      apply: s.snippet,
+      boost: s.label.toLowerCase().startsWith(typed.toLowerCase()) ? 10 : 0,
+    }));
+    return {
+      from: ctx.pos - typed.length,
+      options,
+      validFor: /^\w*$/,
+    };
+  }
 
   // "type": "|   →  complete to a known primitive type.
   const typeMatch = before.match(/"type"\s*:\s*"([A-Za-z0-9_:-]*)$/);

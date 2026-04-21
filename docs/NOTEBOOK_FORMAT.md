@@ -299,6 +299,51 @@ shown as "expected answer" behind a `<details>` toggle in Read mode.
 Multiple questions per quiz are supported — each `??` / `>>` pair is a
 distinct question.
 
+### Typed questions (Phase 6)
+
+Add a `[type]` tag right after `??` to get a specialized input + local,
+deterministic grading (no Claude round-trip) for the closed kinds.
+Omitting the tag keeps the legacy short-answer behaviour.
+
+**Multiple choice** (`mcq`) — follow the question with a markdown list.
+Mark the correct option with `[x]`, `(x)`, or a `✓`:
+
+```markdown
+?? [mcq] What is the time complexity of binary search?
+- O(n)
+- [x] O(log n)
+- O(n log n)
+>> Each step halves the search space.
+```
+
+**True / false** — the rubric starts with `[true]` or `[false]`:
+
+```markdown
+?? [truefalse] Merge sort is stable.
+>> [true] Merging preserves the original order of equal keys.
+```
+
+**Numeric** — the rubric is a number. Optional `tol=` in the tag for
+absolute tolerance:
+
+```markdown
+?? [numeric tol=0.01] What is g on Earth, in m/s²?
+>> 9.81
+```
+
+**Short answer** — `?? [short]` or no tag. Rubric is sent to Claude
+for grading:
+
+```markdown
+?? Why does v_y = 0 at the peak?
+>> Vertical velocity has been consumed by gravity.
+```
+
+In test mode (header → 📝 Test), mcq renders as a radio group,
+truefalse as two buttons, numeric as an input box, short as a
+textarea. Mcq/truefalse/numeric grade instantly and locally; short
+still hits Claude.
+
 ## Authoring tips
 
 ### Code-line discipline

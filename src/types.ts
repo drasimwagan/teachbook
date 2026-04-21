@@ -146,14 +146,57 @@ export type Step = {
   sourceEndLine?: number;
 };
 
+export type QuizItemMcq = {
+  kind: "mcq";
+  question: string;
+  options: string[];
+  /** 0-based index into `options`. Author-marked correct choice. */
+  correctIndex: number;
+  explanation?: string;
+};
+
+export type QuizItemTrueFalse = {
+  kind: "truefalse";
+  question: string;
+  correct: boolean;
+  explanation?: string;
+};
+
+export type QuizItemNumeric = {
+  kind: "numeric";
+  question: string;
+  value: number;
+  /** Absolute tolerance for correctness. Default 0. */
+  tolerance?: number;
+  explanation?: string;
+};
+
+export type QuizItemShort = {
+  kind: "short";
+  question: string;
+  /** Model answer / grading rubric. Sent to Claude for grading. */
+  rubric: string;
+};
+
+export type QuizItem =
+  | QuizItemMcq
+  | QuizItemTrueFalse
+  | QuizItemNumeric
+  | QuizItemShort;
+
 export type Cell = {
   kind: "concept" | "quiz";
   prose: string;
   code?: string;
   codeLang?: string;
   steps: Step[];
+  /** Legacy single-question fields (backward compat with v0.1 notebooks).
+   *  New notebooks should populate `quizItems` instead. */
   question?: string;
   rubric?: string;
+  /** Structured quiz items. When present, the test-mode renderer branches
+   *  per-kind and grades deterministically for mcq/truefalse/numeric. */
+  quizItems?: QuizItem[];
 };
 
 export type NotebookMetadata = {

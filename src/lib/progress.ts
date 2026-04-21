@@ -3,7 +3,12 @@ import type { Notebook } from "../types";
 
 export type QuizAnswer = {
   cellIndex: number; // the quiz cell's index in notebook.cells
+  /** 0-based index of the quiz item within the cell. Legacy answers
+   *  (written before Phase 6) may omit this — treat as 0. */
+  itemIndex?: number;
   question: string; // snapshot of the question (for rendering when the teacher reads back progress against a different notebook revision)
+  /** Free-form student response. For mcq: string index. For truefalse:
+   *  "true" | "false". For numeric: the typed number. For short: prose. */
   answer: string;
   grade?: Grade;
   gradedAt?: string; // ISO timestamp
@@ -31,25 +36,34 @@ export function emptyProgress(notebook: Notebook): TestProgress {
 export function findAnswer(
   p: TestProgress,
   cellIndex: number,
+  itemIndex = 0,
 ): QuizAnswer | undefined {
-  return p.answers.find((a) => a.cellIndex === cellIndex);
+  return p.answers.find(
+    (a) => a.cellIndex === cellIndex && (a.itemIndex ?? 0) === itemIndex,
+  );
 }
 
 export function upsertAnswer(
   p: TestProgress,
   cellIndex: number,
-  update: Partial<Omit<QuizAnswer, "cellIndex">>,
+  itemIndex: number,
+  update: Partial<Omit<QuizAnswer, "cellIndex" | "itemIndex">>,
 ): TestProgress {
-  const existing = findAnswer(p, cellIndex);
+  const existing = findAnswer(p, cellIndex, itemIndex);
   const merged: QuizAnswer = {
     cellIndex,
+    itemIndex,
     question: update.question ?? existing?.question ?? "",
     answer: update.answer ?? existing?.answer ?? "",
     grade: update.grade ?? existing?.grade,
     gradedAt: update.gradedAt ?? existing?.gradedAt,
   };
   const answers = existing
-    ? p.answers.map((a) => (a.cellIndex === cellIndex ? merged : a))
+    ? p.answers.map((a) =>
+        a.cellIndex === cellIndex && (a.itemIndex ?? 0) === itemIndex
+          ? merged
+          : a,
+      )
     : [...p.answers, merged];
   return { ...p, answers };
 }

@@ -1,0 +1,61 @@
+---
+version: 0.1
+title: Quiz Sampler
+subject: intro
+author: Teachbook starter
+tags: [intro, assessment]
+---
+
+# Quiz Sampler — Phase 6 question types
+
+This short notebook demonstrates the four quiz question types supported
+by test mode. Toggle **📝 Test** in the header, start or load a progress
+file, and try each one.
+
+```text
+?? [mcq] What is 2 + 2?
+- 3
+- [x] 4
+- 5
+
+?? [truefalse] Merge sort is stable.
+>> [true] Equal keys keep their original order because merging is left-biased.
+
+?? [numeric tol=0.01] What is g on Earth, in m/s²?
+>> 9.81
+
+?? Why does the vertical velocity of a projectile reach zero at the peak?
+>> Because gravity has exactly consumed the upward component over the
+ascent; an instant later the ball accelerates downward.
+```
+
+## Demo scene
+
+One scene so the visualization pane has something to render. Not
+strictly needed for the quiz below — the quiz cell stands on its own.
+
+```scene step=0 narration="Welcome! Click 📝 Test in the header, then scroll down to the quiz." code_lines=1
+{ "primitives": [
+  {"type":"label","x":400,"y":180,"text":"Phase 6","latex":false},
+  {"type":"label","x":400,"y":230,"text":"four question types","latex":false},
+  {"type":"label","x":400,"y":300,"text":"mcq · truefalse · numeric · short","latex":false}
+] }
+```
+
+## Quiz
+
+?? [mcq] What is the time complexity of binary search on a sorted array of length *n*?
+- O(n)
+- [x] O(log n)
+- O(n log n)
+- O(1)
+>> Each step halves the search space, giving a logarithmic number of steps.
+
+?? [truefalse] Merge sort is a stable sorting algorithm.
+>> [true] When merging, the implementation takes from the left half first on ties, preserving the original order of equal keys.
+
+?? [numeric tol=0.01] What is the acceleration due to gravity on Earth's surface, in m/s²?
+>> 9.81
+
+?? Why does the vertical velocity of a projectile launched upward at angle θ reach zero at the peak of its trajectory?
+>> Gravity decelerates the upward motion. At the peak, the initial upward component v·sin(θ) has been exactly consumed by −g·t; an instant later, the ball starts accelerating downward.
