@@ -16,12 +16,14 @@ new notebook from a one-line prompt.
 
 ## Status
 
-**Phase 1 complete — v0.1 release imminent.**
+**Phases 1 and 2 complete — v0.1 release draft ready.**
 
-The engine is stable and usable. We ship 14 bundled example notebooks (113
+The engine is stable and usable. We ship 17 bundled example notebooks (128
 scenes total) across 7 subject areas, a plugin system that extends into new
-domains without touching the core, and streaming AI chat / notebook
-generation / step insertion through the Claude Code CLI.
+domains without touching the core, streaming AI chat / notebook generation /
+step insertion through the Claude Code CLI, and a Pyodide-backed Run pane
+that lets students execute the notebook's Python and inject the current
+scene's primitives as globals.
 
 Not yet started: Pyodide (students running the notebook's Python),
 bi-directional editing (drag scene elements to update source), test mode

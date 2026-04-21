@@ -8,6 +8,7 @@ import StepControls from "./components/StepControls";
 import GenerateDialog from "./components/GenerateDialog";
 import ExamplesDialog from "./components/ExamplesDialog";
 import InsertStepDialog from "./components/InsertStepDialog";
+import RunPane from "./components/RunPane";
 import { parseTbk } from "./lib/tbk-parser";
 import { useHistory } from "./lib/useHistory";
 import type { Notebook } from "./types";
@@ -41,6 +42,7 @@ function App() {
   const [generateOpen, setGenerateOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [insertAfter, setInsertAfter] = useState<number | null>(null);
+  const [runOpen, setRunOpen] = useState(false);
 
   const history = useHistory();
 
@@ -259,6 +261,18 @@ function App() {
           >
             Generate
           </button>
+          <button
+            onClick={() => setRunOpen((v) => !v)}
+            className={
+              "rounded px-2 py-1 text-sm " +
+              (runOpen
+                ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                : "border border-zinc-300 dark:border-zinc-700")
+            }
+            title="Run this notebook's Python code"
+          >
+            {runOpen ? "▾ Run" : "▸ Run"}
+          </button>
           <StepControls
             currentStep={currentStep}
             totalSteps={totalSteps}
@@ -288,6 +302,12 @@ function App() {
           currentStep={currentStep}
         />
       </main>
+      <RunPane
+        notebook={notebook}
+        currentStep={currentStep}
+        open={runOpen}
+        onClose={() => setRunOpen(false)}
+      />
       <GenerateDialog
         open={generateOpen}
         onClose={() => setGenerateOpen(false)}

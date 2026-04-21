@@ -25,6 +25,22 @@ pub fn user_notebooks_path() -> Result<String, String> {
     user_notebooks_dir().map(|p| p.to_string_lossy().to_string())
 }
 
+/// ~/Teachbook/experiments — where student Python scratchpads are saved.
+fn user_experiments_dir() -> Result<PathBuf, String> {
+    let home = dirs::home_dir().ok_or_else(|| "Could not resolve $HOME".to_string())?;
+    let dir = home.join("Teachbook").join("experiments");
+    if !dir.exists() {
+        fs::create_dir_all(&dir)
+            .map_err(|e| format!("Failed to create {}: {e}", dir.display()))?;
+    }
+    Ok(dir)
+}
+
+#[tauri::command]
+pub fn user_experiments_path() -> Result<String, String> {
+    user_experiments_dir().map(|p| p.to_string_lossy().to_string())
+}
+
 #[tauri::command]
 pub fn list_user_notebooks() -> Result<Vec<UserNotebook>, String> {
     let dir = user_notebooks_dir()?;

@@ -53,7 +53,7 @@ subject-agnostic.
 7. `plot` — line/scatter with animated path growth
 8. `graph` — weighted directed/undirected with node + edge highlighting
 
-### 4 plugin primitives (shipped)
+### 5 plugin primitives (shipped)
 
 | Type | Category | Purpose |
 |------|----------|---------|
@@ -61,6 +61,7 @@ subject-agnostic.
 | `nn` | machine-learning | Layered neurons with activation colors, highlightable edges |
 | `heatmap` | machine-learning | 2D colored grid, 3 colormaps, kernel-window overlays |
 | `bloch` | quantum | Single-qubit state on a 3D-projected unit sphere |
+| `circuit` | electronics | Schematic symbols: wire, resistor, capacitor, inductor, battery, voltage source, ground, node |
 
 ## `.tbk` file format
 
@@ -121,17 +122,29 @@ Parser lives in `src/lib/tbk-parser.ts`, serializer in
 - [x] `molecule`, `nn`, `heatmap`, `bloch` plugins
 - [x] Contributor docs (`PLUGIN_AUTHORING.md`)
 
-### Milestone: v0.1 — usable release (in progress)
-- [ ] `electronics` plugin (circuit schematics)
-- [ ] `CONTRIBUTING.md` + issue templates
-- [ ] `pnpm tauri build` installers for mac/win/linux
-- [ ] First public GitHub release
+### Milestone: v0.1 — usable release ✅
+- [x] `electronics` plugin (circuit schematics)
+- [x] `CONTRIBUTING.md` + issue templates
+- [x] `pnpm tauri build` installers for mac/win/linux (CI-built via
+  `.github/workflows/release.yml` — macOS .dmg + universal.app, Windows
+  .msi/.exe, Linux .deb/.rpm/.AppImage)
+- [x] Landing page + GitHub Pages deploy (`pages.yml`)
+- [x] First public GitHub release (draft `v0.1.0` ready to publish)
 
-### Phase 2 — Student code execution (Pyodide) — not started
-- [ ] Add a 4th pane: "Run" — Pyodide REPL with the notebook's code
-- [ ] stdout/stderr routed to the run pane
-- [ ] Button to inject current variables from a scene into the REPL
-- [ ] Save/load student experiments separately from the notebook
+### Phase 2 — Student code execution (Pyodide) ✅
+- [x] Add a 4th pane: "Run" — Pyodide REPL with the notebook's code
+  (bottom drawer toggled from the header, `src/components/RunPane.tsx`)
+- [x] stdout/stderr routed to the run pane (`pyodide.setStdout` / `setStderr`
+  batched mode, captured line-by-line into a scrollable log)
+- [x] Button to inject current variables from a scene into the REPL — the
+  **Inject scene** button exposes `scene`, `primitives`, and per-id globals
+- [x] Save/load student experiments separately from the notebook — `.py`
+  files under `~/Teachbook/experiments/` via Tauri save/open dialogs
+
+Pyodide (~6 MB WASM) is fetched lazily from jsdelivr on first Run; the
+main JS bundle stays lean. `src/lib/pyodide-runner.ts` owns the singleton
+load promise and the run/inject helpers. Future enhancement: optional
+bundled wheel for offline use.
 
 ### Phase 3 — Bi-directional editing — not started
 - [ ] Drag a scene element (e.g. a ball in projectile motion) → source updates

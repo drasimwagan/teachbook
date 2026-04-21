@@ -4,15 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Phase 1 complete. v0.1 release imminent.** The engine is stable. The app
-ships 14 bundled notebooks (113 scenes) across algorithms, physics, biology,
-electronics, chemistry, machine-learning, and quantum. Streaming chat /
-generate / insert-step all work end-to-end. Undo/redo, LaTeX, scene tweening,
-plugin system, and user library are all in place.
+**Phases 1 and 2 complete. v0.1 release draft ready to publish.** The
+engine is stable. The app ships 17 bundled notebooks (128 scenes) across
+algorithms, physics, biology, electronics, chemistry, machine-learning,
+and quantum. Streaming chat / generate / insert-step all work end-to-end.
+Undo/redo, LaTeX, scene tweening, plugin system, and user library are in
+place. Phase 2 added a Pyodide-backed Run pane: students execute the
+notebook's Python in-browser, inject scene primitives as globals, and
+save experiments as `.py` under `~/Teachbook/experiments/`.
 
-Not yet started: Phase 2 (Pyodide — students run the code), Phase 3
-(bi-directional editing), Phase 4 (test mode). Current roadmap:
-[`docs/PLAN.md`](docs/PLAN.md).
+Not yet started: Phase 3 (bi-directional editing), Phase 4 (test mode).
+Current roadmap: [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Documentation map
 
@@ -147,9 +149,14 @@ example notebook in the same commit.
 
 ## Quick facts for answering questions
 
-- 14 bundled notebooks, 113 total scenes, covering 7 subject areas
-- 4 plugins currently shipped: `molecule`, `nn`, `heatmap`, `bloch`
+- 17 bundled notebooks, 128 total scenes, covering 7 subject areas
+- 5 plugins currently shipped: `molecule`, `nn`, `heatmap`, `bloch`, `circuit`
 - Main JS bundle: ~380 KB gzip (KaTeX + Markdown + CodeMirror langs lazy-loaded)
 - File format: Markdown + YAML frontmatter + `scene` fences + optional `## Quiz`
 - User notebooks: `~/Teachbook/notebooks/` (auto-created on first launch)
 - Claude integration: CLI subprocess, streaming via Tauri events, cancel via SIGTERM
+- Run pane (`src/components/RunPane.tsx`): Pyodide loaded lazily from
+  jsdelivr CDN (`src/lib/pyodide-runner.ts`); stdout/stderr captured via
+  Pyodide's batched streams; scene primitives injected as Python globals
+  keyed by `id` or `type_N`; `.py` experiments saved to
+  `~/Teachbook/experiments/` (Rust `user_experiments_path` command)
