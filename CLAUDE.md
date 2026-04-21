@@ -4,7 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Phases 1 and 2 complete. v0.1 release draft ready to publish.** The
+**Phases 1 and 2 implemented. Release held pending smoke-test of the Run
+pane in `pnpm tauri dev`.** The
 engine is stable. The app ships 17 bundled notebooks (128 scenes) across
 algorithms, physics, biology, electronics, chemistry, machine-learning,
 and quantum. Streaming chat / generate / insert-step all work end-to-end.
