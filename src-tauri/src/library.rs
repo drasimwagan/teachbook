@@ -41,6 +41,22 @@ pub fn user_experiments_path() -> Result<String, String> {
     user_experiments_dir().map(|p| p.to_string_lossy().to_string())
 }
 
+/// ~/Teachbook/progress — where student test-mode progress JSONs are saved.
+fn user_progress_dir() -> Result<PathBuf, String> {
+    let home = dirs::home_dir().ok_or_else(|| "Could not resolve $HOME".to_string())?;
+    let dir = home.join("Teachbook").join("progress");
+    if !dir.exists() {
+        fs::create_dir_all(&dir)
+            .map_err(|e| format!("Failed to create {}: {e}", dir.display()))?;
+    }
+    Ok(dir)
+}
+
+#[tauri::command]
+pub fn user_progress_path() -> Result<String, String> {
+    user_progress_dir().map(|p| p.to_string_lossy().to_string())
+}
+
 #[tauri::command]
 pub fn list_user_notebooks() -> Result<Vec<UserNotebook>, String> {
     let dir = user_notebooks_dir()?;

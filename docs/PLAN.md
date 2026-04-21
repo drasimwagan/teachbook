@@ -171,11 +171,34 @@ Follow-ups (not MVP):
   don't tween vertices anyway)
 - Drag snapping / axis constraints for structured notebooks
 
-### Phase 4 — Test mode — not started
-- [ ] Teacher-authored quiz notebooks with rubrics (schema already supports this)
-- [ ] Student answer recording
-- [ ] Claude grades answers against rubric
-- [ ] Progress file portable between student and teacher
+### Phase 4 — Test mode ✅ (MVP)
+- [x] Teacher-authored quiz notebooks with rubrics — the schema already
+  supports `## Quiz` sections with `??` questions and `>>` rubrics. No
+  schema changes needed.
+- [x] Student answer recording — textarea per quiz cell; answers live
+  in a `TestProgress` JSON indexed by `cellIndex`.
+- [x] Claude grades answers against rubric — `gradeAnswer()` in
+  `src/lib/grade.ts` asks Claude for `{score, correct, feedback}` JSON
+  via a dedicated grading system prompt, then parses tolerantly (handles
+  fenced, prose-wrapped, or direct JSON responses).
+- [x] Progress file portable between student and teacher — `.json`
+  under `~/Teachbook/progress/<slug>.json`, save/load via header when
+  test mode is on. Students hand the file back to teachers; teachers
+  open the same notebook in test mode, load the progress file, and
+  every quiz cell reflects the student's answer and grade.
+
+How to use: header → **📝 Test** toggles test mode. Quiz cells swap from
+the collapsible "show expected answer" card to an answer textarea +
+**Grade my answer** button. Correct/incorrect is framed by card color
+(emerald/rose). A running `<correct>/<attempted> ✓` counter sits in the
+header next to the test-mode toggle.
+
+Follow-ups (not MVP):
+- Partial-credit re-grade with explanation of point deductions
+- Teacher review mode (read-only, shows all student answers side-by-side)
+- Per-question time-on-task tracking
+- Rubric-less quizzes (use Claude to grade against the notebook prose
+  alone)
 
 ### Phase 5 — Community — not started
 - [ ] Notebook gallery website (GitHub Pages over a curated repo)

@@ -4,8 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Phases 1–3 implemented. v0.2.0 draft in CI with Phase 2 (Run pane);
-Phase 3 (bi-directional editing) is post-v0.2 main-branch work.** The
+**All four phases (1–4) implemented.** v0.2.0 draft in CI carries
+Phase 2 (Run pane); Phase 3 (bi-directional editing) and Phase 4 (test
+mode with Claude grading) are post-v0.2 main-branch work awaiting
+smoke-test and a v0.3 release cut. The
 engine is stable. The app ships 17 bundled notebooks (128 scenes) across
 algorithms, physics, biology, electronics, chemistry, machine-learning,
 and quantum. Streaming chat / generate / insert-step all work end-to-end.
@@ -18,8 +20,16 @@ Phase 3 adds drag-to-edit on `shape` and `label` primitives — pointer
 updates the scene JSON in the source (with Undo). `src/lib/scene-edit.ts`
 owns the surgical fence replacement; `SceneRenderer` owns drag state.
 
-Not yet started: Phase 4 (test mode — teacher rubrics, student answers,
-Claude grading). Current roadmap: [`docs/PLAN.md`](docs/PLAN.md).
+Phase 4 adds test mode: the **📝 Test** header toggle swaps quiz cells
+into answerable textareas with a Claude-graded feedback loop.
+`src/lib/grade.ts` owns the grading prompt + tolerant JSON parser;
+`src/lib/progress.ts` owns the portable `TestProgress` file format
+(`~/Teachbook/progress/<slug>.json`). Teachers open the same notebook
+in test mode, load a student's progress JSON, and see every answer +
+grade inline.
+
+Current roadmap: [`docs/PLAN.md`](docs/PLAN.md). Open polish items are
+in each phase's Follow-ups list.
 
 ## Documentation map
 
@@ -165,3 +175,8 @@ example notebook in the same commit.
   Pyodide's batched streams; scene primitives injected as Python globals
   keyed by `id` or `type_N`; `.py` experiments saved to
   `~/Teachbook/experiments/` (Rust `user_experiments_path` command)
+- Test mode: header **📝 Test** toggles quiz rendering. `gradeAnswer()`
+  in `src/lib/grade.ts` calls Claude with a grading system prompt and
+  parses `{score, correct, feedback}` JSON tolerantly. Progress JSONs
+  live in `~/Teachbook/progress/` (Rust `user_progress_path` command)
+  and are portable student→teacher.

@@ -136,6 +136,45 @@ hit zero at the peak?"), request alternate examples ("redo this with an
 - The current notebook source (truncated to 6000 chars) and current step
   narration are injected into Claude's system prompt automatically
 
+## Test mode
+
+Click **📝 Test** in the header to swap quiz cells from "show expected
+answer" cards into answerable textareas. Each quiz question gets:
+
+- A textarea for the student's answer
+- A **Grade my answer** button that sends the answer + rubric to Claude
+- Inline feedback with a `score / 10` and a 2–3 sentence explanation
+- A green/red card border based on whether the score is ≥ 7
+
+Grading is per-cell, not per-notebook. You can re-grade after editing an
+answer, and partial progress persists across Save/Load.
+
+### Progress files
+
+A progress file is a JSON document that records one student's answers
+and grades for one notebook. When test mode is on, the header shows
+three small buttons next to **Test on**:
+
+- **New** — start a fresh progress file from the current notebook's
+  metadata. Overwrites any in-memory progress; on-disk files are safe
+  until you Save.
+- **Load** — open a `.json` from `~/Teachbook/progress/` (or anywhere).
+  Answers repopulate the textareas; existing grades render as if
+  freshly computed.
+- **Save** — write the progress to disk. First save prompts for a
+  location; subsequent saves overwrite the same file.
+
+A running `correct/attempted ✓` counter sits next to the buttons.
+
+**Portability**: students hand the `.json` file back to teachers by
+any means (email, shared drive, LMS upload). Teachers open the same
+notebook, enter test mode, **Load** the file, and every quiz cell
+reflects the student's work.
+
+**Privacy**: grading sends the question, rubric, and the student's
+answer to Claude. No PII beyond what's in the answer itself leaves the
+machine. The progress file stays local until you share it.
+
 ## Run the notebook's code (Pyodide)
 
 Click **▸ Run** in the header. A drawer slides up from the bottom with a
@@ -248,6 +287,8 @@ the app or loading another notebook drops unsaved edits.
 - **Experiments** — `~/Teachbook/experiments/` (created on first Save
   from the Run pane). Your scratch `.py` files; not linked to any
   notebook.
+- **Progress** — `~/Teachbook/progress/` (created on first Save from
+  test mode). Student answer + grade JSONs.
 - **Claude CLI** — resolved in this order: `TEACHBOOK_CLAUDE_BIN` env
   var, then your shell's `PATH`, then `/opt/homebrew/bin/claude`,
   `/usr/local/bin/claude`, `~/.local/bin/claude`.
@@ -296,6 +337,16 @@ The step has no scene fence, or the notebook has no cells with steps
 First import downloads and installs the NumPy wheel (~8 MB). Give it
 10–20 s; the status stays on "ready" but the Python interpreter is
 busy. Subsequent imports are instant.
+
+**Test mode: "Could not parse grade from Claude's response".**
+Claude responded but not with parseable JSON. Click **Grade my answer**
+again; usually the retry succeeds. If it keeps failing, the rubric may
+be confusing Claude into writing prose — shorten the rubric and retry.
+
+**Test mode: my grade says correct but the feedback is wrong.**
+Grading is probabilistic. Regrade for a second opinion. The score is a
+rough signal, not a formal assessment — rely on the feedback text
+itself to decide whether the student understood.
 
 ## Still stuck?
 

@@ -11,6 +11,13 @@ import InsertStepDialog from "./components/InsertStepDialog";
 import RunPane from "./components/RunPane";
 import { parseTbk } from "./lib/tbk-parser";
 import { updatePrimitiveInSource, type PrimitivePatch } from "./lib/scene-edit";
+import {
+  emptyProgress,
+  parseProgress,
+  serializeProgress,
+  summary,
+  type TestProgress,
+} from "./lib/progress";
 import { useHistory } from "./lib/useHistory";
 import type { Notebook } from "./types";
 import "./App.css";
@@ -44,6 +51,9 @@ function App() {
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [insertAfter, setInsertAfter] = useState<number | null>(null);
   const [runOpen, setRunOpen] = useState(false);
+  const [testMode, setTestMode] = useState(false);
+  const [progress, setProgress] = useState<TestProgress | null>(null);
+  const [progressPath, setProgressPath] = useState<string | null>(null);
 
   const history = useHistory();
 
@@ -175,6 +185,65 @@ function App() {
 
   const totalSteps = notebook?.totalSteps ?? 0;
 
+  const startNewProgress = useCallback(() => {
+    if (!notebook) return;
+    setProgress(emptyProgress(notebook));
+    setProgressPath(null);
+  }, [notebook]);
+
+  const saveProgress = useCallback(async () => {
+    if (!progress) return;
+    let path = progressPath;
+    if (!path) {
+      let defaultPath: string | undefined;
+      try {
+        const dir = await invoke<string>("user_progress_path");
+        const slug = progress.notebookTitle
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "")
+          .slice(0, 40);
+        defaultPath = `${dir}/${slug || "progress"}.json`;
+      } catch {
+        // fall through
+      }
+      const chosen = await save({
+        filters: [{ name: "Progress JSON", extensions: ["json"] }],
+        defaultPath,
+      });
+      if (!chosen) return;
+      path = chosen;
+    }
+    try {
+      await invoke("save_notebook", { path, contents: serializeProgress(progress) });
+      setProgressPath(path);
+    } catch (e) {
+      setParseErrors([`Save progress failed: ${String(e)}`]);
+    }
+  }, [progress, progressPath]);
+
+  const loadProgress = useCallback(async () => {
+    let defaultDir: string | undefined;
+    try {
+      defaultDir = await invoke<string>("user_progress_path");
+    } catch {
+      // fall through
+    }
+    const selected = await open({
+      multiple: false,
+      defaultPath: defaultDir,
+      filters: [{ name: "Progress JSON", extensions: ["json"] }],
+    });
+    if (!selected || typeof selected !== "string") return;
+    try {
+      const contents = await invoke<string>("load_notebook", { path: selected });
+      setProgress(parseProgress(contents));
+      setProgressPath(selected);
+    } catch (e) {
+      setParseErrors([`Load progress failed: ${String(e)}`]);
+    }
+  }, []);
+
   const handlePrimitivePatch = useCallback(
     (
       sourceLine: number,
@@ -286,6 +355,53 @@ function App() {
             Generate
           </button>
           <button
+            onClick={() => setTestMode((v) => !v)}
+            className={
+              "rounded px-2 py-1 text-sm " +
+              (testMode
+                ? "bg-amber-600 text-white hover:bg-amber-700"
+                : "border border-zinc-300 dark:border-zinc-700")
+            }
+            title="Toggle test mode (quiz cells become answerable)"
+          >
+            {testMode ? "📝 Test on" : "📝 Test"}
+          </button>
+          {testMode && (
+            <div className="inline-flex rounded border border-zinc-300 dark:border-zinc-700 overflow-hidden">
+              <button
+                onClick={startNewProgress}
+                disabled={!notebook}
+                className="px-2 py-1 text-xs disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:hover:bg-transparent"
+                title="Start a fresh progress file for this notebook"
+              >
+                New
+              </button>
+              <button
+                onClick={loadProgress}
+                className="border-l border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                title="Load a saved progress file"
+              >
+                Load
+              </button>
+              <button
+                onClick={saveProgress}
+                disabled={!progress}
+                className="border-l border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:hover:bg-transparent"
+                title="Save progress to disk"
+              >
+                Save
+              </button>
+              {progress && (() => {
+                const s = summary(progress);
+                return (
+                  <span className="px-2 py-1 text-xs text-zinc-600 dark:text-zinc-400 border-l border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 tabular-nums">
+                    {s.correct}/{s.attempted} ✓
+                  </span>
+                );
+              })()}
+            </div>
+          )}
+          <button
             onClick={() => setRunOpen((v) => !v)}
             className={
               "rounded px-2 py-1 text-sm " +
@@ -314,6 +430,9 @@ function App() {
           notebook={notebook}
           currentStep={currentStep}
           onStepSelect={setCurrentStep}
+          testMode={testMode}
+          progress={progress ?? undefined}
+          onProgressChange={setProgress}
         />
         <VisualizationPane
           notebook={notebook}

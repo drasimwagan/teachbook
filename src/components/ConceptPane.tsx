@@ -9,6 +9,7 @@ import {
   setHighlightRangeEffect,
 } from "../lib/cm-line-highlight";
 import type { Notebook } from "../types";
+import type { TestProgress } from "../lib/progress";
 
 // ConceptReadView pulls react-markdown + remark-math + rehype-katex + katex
 // (~150KB gzip). Lazy-load so first paint doesn't pay for it.
@@ -24,6 +25,9 @@ type Props = {
   notebook: Notebook | null;
   currentStep: number;
   onStepSelect: (step: number) => void;
+  testMode?: boolean;
+  progress?: TestProgress;
+  onProgressChange?: (next: TestProgress) => void;
 };
 
 const highlightField = lineHighlight({
@@ -39,6 +43,9 @@ export default function ConceptPane({
   notebook,
   currentStep,
   onStepSelect,
+  testMode,
+  progress,
+  onProgressChange,
 }: Props) {
   const [mode, setMode] = useState<Mode>("read");
   const ref = useRef<ReactCodeMirrorRef>(null);
@@ -137,6 +144,9 @@ export default function ConceptPane({
               notebook={notebook}
               currentStep={currentStep}
               onStepSelect={onStepSelect}
+              testMode={testMode}
+              progress={progress}
+              onProgressChange={onProgressChange}
             />
           </Suspense>
         )}
