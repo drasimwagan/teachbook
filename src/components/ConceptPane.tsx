@@ -5,6 +5,7 @@ import { json } from "@codemirror/lang-json";
 import { LanguageDescription } from "@codemirror/language";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView } from "@codemirror/view";
+import { autocompletion } from "@codemirror/autocomplete";
 import {
   lineHighlight,
   sceneHighlightTheme,
@@ -25,6 +26,7 @@ import {
   pushDiagnostics,
   sceneFold,
 } from "../lib/scene-editor-ext";
+import { sceneCompletions, typeHover } from "../lib/scene-completion";
 import type { ParseDiagnostic } from "../lib/tbk-parser";
 import type { Notebook } from "../types";
 import type { TestProgress } from "../lib/progress";
@@ -89,6 +91,12 @@ export default function ConceptPane({
       sceneFold,
       lintStub,
       lintGutterExt,
+      typeHover,
+      autocompletion({
+        override: [sceneCompletions],
+        activateOnTyping: true,
+        closeOnBlur: true,
+      }),
       EditorView.lineWrapping,
       EditorView.updateListener.of((u) => {
         if (u.selectionSet || u.docChanged) {
@@ -255,7 +263,9 @@ export default function ConceptPane({
               lineNumbers: true,
               foldGutter: true,
               highlightActiveLine: true,
-              autocompletion: true,
+              // Our scene-aware completion is installed via extensions above;
+              // disable the default to avoid two autocompletion instances.
+              autocompletion: false,
               closeBrackets: true,
               searchKeymap: true,
               highlightSelectionMatches: true,
