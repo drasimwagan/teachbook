@@ -56,6 +56,8 @@ convention:
 | `title` | string | Shown in header, gallery cards, and generated filenames. |
 | `subject` | string | Drives the color-coded tag in the Examples gallery. Conventions below. |
 | `author` | string | Shown in the gallery card. |
+| `tags` | string[] | Optional free-form labels (`[intro, sorting]`). Used by the Examples filter chips. |
+| `locked` | bool | When `true`, the app hides Edit mode and the "Show expected answer" details so a student on a teacher-assigned notebook can't peek at rubrics. Not a security boundary — the `.tbk` file is still plain text on disk. |
 
 ### Subject conventions
 

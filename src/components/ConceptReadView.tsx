@@ -24,6 +24,9 @@ type Props = {
   progress?: TestProgress;
   /** Called with the updated progress after a save or grade. */
   onProgressChange?: (next: TestProgress) => void;
+  /** When true, "Show expected answer" affordances are suppressed so a
+   *  student on a teacher-assigned notebook can't peek at rubrics. */
+  locked?: boolean;
 };
 
 // Map a cell-relative step index back to a global step index
@@ -40,6 +43,7 @@ export default function ConceptReadView({
   testMode,
   progress,
   onProgressChange,
+  locked,
 }: Props) {
   if (!notebook) {
     return (
@@ -91,19 +95,46 @@ export default function ConceptReadView({
               )
             ) : (
               <div className="not-prose rounded border border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950 p-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-1">
-                  Quiz
+                <div className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-1 flex items-center justify-between">
+                  <span>Quiz</span>
+                  {locked && (
+                    <span
+                      className="text-[10px] text-zinc-500"
+                      title="Assigned quiz — expected answer hidden."
+                    >
+                      🔒 locked
+                    </span>
+                  )}
                 </div>
-                {cell.question && (
-                  <div className="text-sm text-amber-900 dark:text-amber-100">
-                    {cell.question}
-                  </div>
+                {cell.quizItems && cell.quizItems.length > 0 ? (
+                  <ol className="mt-1 space-y-1 list-decimal list-inside text-sm text-amber-900 dark:text-amber-100">
+                    {cell.quizItems.map((item, ii) => (
+                      <li key={ii}>
+                        <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 mr-1">
+                          [{item.kind}]
+                        </span>
+                        {item.question}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  cell.question && (
+                    <div className="text-sm text-amber-900 dark:text-amber-100">
+                      {cell.question}
+                    </div>
+                  )
                 )}
-                {cell.rubric && (
+                {!locked && cell.rubric && !cell.quizItems && (
                   <details className="mt-2 text-xs text-amber-800 dark:text-amber-200">
                     <summary className="cursor-pointer">Show expected answer</summary>
                     <div className="mt-1">{cell.rubric}</div>
                   </details>
+                )}
+                {locked && !testMode && (
+                  <div className="mt-2 text-[11px] text-zinc-500 italic">
+                    Answer hidden. Toggle 📝 Test in the header to attempt
+                    the question.
+                  </div>
                 )}
               </div>
             )

@@ -207,6 +207,12 @@ export type NotebookMetadata = {
   /** Optional free-form tags (e.g. ["intro", "sorting", "assignment"]).
    *  Populated from YAML frontmatter. Used by the Examples filter. */
   tags?: string[];
+  /** Soft lock: when true, the app hides answer-revealing UI (Edit mode,
+   *  the "Show expected answer" details in Read view). Intended for
+   *  teacher-pushed quizzes where the student shouldn't inadvertently
+   *  see rubrics or `[x]`-marked options. NOT a security boundary — a
+   *  student with shell access can still read the `.tbk` file directly. */
+  locked?: boolean;
 };
 
 export type Notebook = {

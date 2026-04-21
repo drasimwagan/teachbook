@@ -48,6 +48,9 @@ type Props = {
   testMode?: boolean;
   progress?: TestProgress;
   onProgressChange?: (next: TestProgress) => void;
+  /** When true, Edit mode (which would expose raw source + rubrics) is
+   *  hidden. Set by App.tsx from the notebook's `locked` frontmatter. */
+  locked?: boolean;
 };
 
 const highlightField = lineHighlight({
@@ -76,8 +79,17 @@ export default function ConceptPane({
   testMode,
   progress,
   onProgressChange,
+  locked,
 }: Props) {
   const [mode, setMode] = useState<Mode>("read");
+  // A locked notebook never allows Edit mode, regardless of prior state.
+  const effectiveMode: Mode = locked ? "read" : mode;
+
+  // If the user was in Edit mode and the notebook flips to locked,
+  // reset the toggle so they don't see Edit highlighted but Read showing.
+  useEffect(() => {
+    if (locked && mode === "edit") setMode("read");
+  }, [locked, mode]);
   const [cursor, setCursor] = useState<{ line: number; col: number } | null>(
     null,
   );
@@ -111,11 +123,11 @@ export default function ConceptPane({
 
   // Push parse diagnostics onto the editor whenever the errors prop changes.
   useEffect(() => {
-    if (mode !== "edit") return;
+    if (effectiveMode !== "edit") return;
     const view = ref.current?.view;
     if (!view) return;
     pushDiagnostics(view, errors);
-  }, [errors, mode]);
+  }, [errors, effectiveMode]);
 
   // Highlight the active scene range on every change — cheap, idempotent.
   // We key on the tuple's values, not its identity, so a re-parse that leaves
@@ -123,13 +135,13 @@ export default function ConceptPane({
   const rangeStart = activeSceneRange?.[0] ?? null;
   const rangeEnd = activeSceneRange?.[1] ?? null;
   useEffect(() => {
-    if (mode !== "edit") return;
+    if (effectiveMode !== "edit") return;
     const view = ref.current?.view;
     if (!view) return;
     view.dispatch({
       effects: setHighlightRangeEffect.of(activeSceneRange ?? null),
     });
-  }, [rangeStart, rangeEnd, mode]);
+  }, [rangeStart, rangeEnd, effectiveMode]);
 
   // Scroll to the active scene ONLY when the user navigates to a different
   // step (Next / Prev / click-a-step). Typing inside a scene would otherwise
@@ -137,7 +149,7 @@ export default function ConceptPane({
   // it's jumping — that's the bug the user flagged.
   const lastScrolledStep = useRef<number | null>(null);
   useEffect(() => {
-    if (mode !== "edit") return;
+    if (effectiveMode !== "edit") return;
     if (lastScrolledStep.current === currentStep) return;
     lastScrolledStep.current = currentStep;
     const view = ref.current?.view;
@@ -154,23 +166,23 @@ export default function ConceptPane({
       // range out of doc (stale parse), ignore
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, mode]);
+  }, [currentStep, effectiveMode]);
 
   // Reset the step-scroll memo when leaving edit mode so returning to the
   // same step after switching to Read still scrolls.
   useEffect(() => {
-    if (mode !== "edit") lastScrolledStep.current = null;
-  }, [mode]);
+    if (effectiveMode !== "edit") lastScrolledStep.current = null;
+  }, [effectiveMode]);
 
   // Seed cursor state once the editor first mounts in edit mode.
   useEffect(() => {
-    if (mode !== "edit") return;
+    if (effectiveMode !== "edit") return;
     const view = ref.current?.view;
     if (!view) return;
     const pos = view.state.selection.main.head;
     const line = view.state.doc.lineAt(pos);
     setCursor({ line: line.number, col: pos - line.from + 1 });
-  }, [mode]);
+  }, [effectiveMode]);
 
   const stepUnderCursor = useMemo(
     () => (cursor ? stepAtLine(notebook, cursor.line) : null),
@@ -206,7 +218,7 @@ export default function ConceptPane({
       <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-500 shrink-0">
         <div className="flex items-center gap-2">
           <span>Concept</span>
-          {mode === "edit" && (
+          {effectiveMode === "edit" && (
             <div className="inline-flex rounded border border-zinc-300 dark:border-zinc-700 overflow-hidden">
               <button
                 onClick={onInsertScene}
@@ -246,35 +258,44 @@ export default function ConceptPane({
               {errors.length} warning{errors.length === 1 ? "" : "s"}
             </span>
           )}
-          <div className="inline-flex rounded border border-zinc-300 dark:border-zinc-700 overflow-hidden">
-            <button
-              onClick={() => setMode("read")}
-              className={
-                "px-2 py-0.5 text-xs " +
-                (mode === "read"
-                  ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
-                  : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800")
-              }
+          {locked ? (
+            <span
+              className="inline-flex items-center gap-1 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-xs text-zinc-600 dark:text-zinc-300"
+              title="This notebook is locked — Edit mode is disabled to avoid revealing answers."
             >
-              Read
-            </button>
-            <button
-              onClick={() => setMode("edit")}
-              className={
-                "px-2 py-0.5 text-xs border-l border-zinc-300 dark:border-zinc-700 " +
-                (mode === "edit"
-                  ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
-                  : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800")
-              }
-            >
-              Edit
-            </button>
-          </div>
+              🔒 Locked
+            </span>
+          ) : (
+            <div className="inline-flex rounded border border-zinc-300 dark:border-zinc-700 overflow-hidden">
+              <button
+                onClick={() => setMode("read")}
+                className={
+                  "px-2 py-0.5 text-xs " +
+                  (mode === "read"
+                    ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
+                    : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800")
+                }
+              >
+                Read
+              </button>
+              <button
+                onClick={() => setMode("edit")}
+                className={
+                  "px-2 py-0.5 text-xs border-l border-zinc-300 dark:border-zinc-700 " +
+                  (mode === "edit"
+                    ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"
+                    : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800")
+                }
+              >
+                Edit
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="flex-1 overflow-auto">
-        {mode === "edit" ? (
+        {effectiveMode === "edit" ? (
           <CodeMirror
             ref={ref}
             value={source}
@@ -307,12 +328,13 @@ export default function ConceptPane({
               testMode={testMode}
               progress={progress}
               onProgressChange={onProgressChange}
+              locked={locked}
             />
           </Suspense>
         )}
       </div>
 
-      {mode === "edit" && (
+      {effectiveMode === "edit" && (
         <div className="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 py-1 text-[11px] text-zinc-600 dark:text-zinc-400 flex items-center gap-3 shrink-0 font-mono tabular-nums">
           {cursor && (
             <span>

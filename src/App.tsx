@@ -184,6 +184,7 @@ function App() {
   }, [currentPath, source, notebook]);
 
   const totalSteps = notebook?.totalSteps ?? 0;
+  const isLocked = notebook?.metadata.locked === true;
 
   const startNewProgress = useCallback(() => {
     if (!notebook) return;
@@ -292,6 +293,14 @@ function App() {
             {notebook?.metadata.title ?? "No notebook"}
             {currentPath ? ` — ${currentPath.split("/").pop()}` : ""}
           </span>
+          {isLocked && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950 border border-amber-300 dark:border-amber-900 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200"
+              title="Assigned notebook — Edit mode and rubric reveal are disabled."
+            >
+              🔒 Locked
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded border border-zinc-300 dark:border-zinc-700 overflow-hidden">
@@ -433,6 +442,7 @@ function App() {
           testMode={testMode}
           progress={progress ?? undefined}
           onProgressChange={setProgress}
+          locked={isLocked}
         />
         <VisualizationPane
           notebook={notebook}
