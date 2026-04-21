@@ -1,0 +1,134 @@
+---
+version: 0.1
+title: RLC Series Resonance
+subject: electronics
+author: Teachbook starter
+---
+
+# RLC Series Resonance
+
+A series R-L-C circuit driven by a sinusoidal source has a frequency at
+which the inductive and capacitive reactances cancel — the **resonant
+frequency**. At that frequency the circuit looks purely resistive,
+impedance bottoms out at $R$, and the current peaks.
+
+$$
+X_L = \omega L,\qquad X_C = \frac{1}{\omega C},\qquad
+\omega_0 = \frac{1}{\sqrt{LC}}
+$$
+
+We use $R = 10\ \Omega$, $L = 100\ \text{mH}$, $C = 10\ \mu\text{F}$ →
+$\omega_0 = 1000\ \text{rad/s}$, $f_0 \approx 159\ \text{Hz}$,
+$Q = \omega_0 L / R = 10$.
+
+```text
+1. Low frequency: capacitor's reactance dominates. Current lags, small amplitude.
+2. Below resonance: X_C > X_L, still capacitive.
+3. At ω0: X_L = X_C, they cancel. Z = R. Current peaks, in phase with source.
+4. Above resonance: X_L > X_C, inductive. Current lags again.
+5. High frequency: inductor chokes the current.
+```
+
+## Frequency sweep
+
+```scene step=0 narration="f = 50 Hz (below resonance). X_C ≈ 318 Ω, X_L ≈ 31 Ω. Net reactance |X_C − X_L| ≈ 287 Ω ≫ R. Capacitor blocks; current is tiny." code_lines=1
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"voltage_source","from":[120,380],"to":[120,140],"label":"V(t)"},
+    {"kind":"wire","from":[120,140],"to":[240,140]},
+    {"kind":"resistor","from":[240,140],"to":[380,140],"label":"R = 10 Ω"},
+    {"kind":"wire","from":[380,140],"to":[460,140]},
+    {"kind":"inductor","from":[460,140],"to":[620,140],"label":"L = 100 mH"},
+    {"kind":"wire","from":[620,140],"to":[700,140]},
+    {"kind":"wire","from":[700,140],"to":[700,380]},
+    {"kind":"capacitor","from":[700,380],"to":[500,380],"label":"C = 10 μF","highlight":true},
+    {"kind":"wire","from":[500,380],"to":[120,380]},
+    {"kind":"ground","at":[400,380]}
+  ]},
+  {"type":"label","id":"state","x":40,"y":450,"text":"f = 50\\ \\text{Hz}:\\ |Z| \\approx 287\\ \\Omega,\\ I_\\text{peak} \\approx 0.035\\ \\text{A}","latex":true}
+] }
+```
+
+```scene step=1 narration="f = 120 Hz. Getting closer. X_C ≈ 133 Ω, X_L ≈ 75 Ω. Still capacitive but gap narrowing." code_lines=2
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"voltage_source","from":[120,380],"to":[120,140],"label":"V(t)"},
+    {"kind":"wire","from":[120,140],"to":[240,140]},
+    {"kind":"resistor","from":[240,140],"to":[380,140],"label":"R"},
+    {"kind":"wire","from":[380,140],"to":[460,140]},
+    {"kind":"inductor","from":[460,140],"to":[620,140],"label":"L"},
+    {"kind":"wire","from":[620,140],"to":[700,140]},
+    {"kind":"wire","from":[700,140],"to":[700,380]},
+    {"kind":"capacitor","from":[700,380],"to":[500,380],"label":"C","highlight":true},
+    {"kind":"wire","from":[500,380],"to":[120,380]},
+    {"kind":"ground","at":[400,380]}
+  ]},
+  {"type":"label","id":"state","x":40,"y":450,"text":"f = 120\\ \\text{Hz}:\\ X_C - X_L \\approx 58\\ \\Omega,\\ |Z| \\approx 59\\ \\Omega","latex":true}
+] }
+```
+
+```scene step=2 narration="f = f0 = 159 Hz. X_L = X_C = 100 Ω. They cancel exactly. |Z| = R = 10 Ω. Current peaks and is in phase with the source. Resonance." code_lines=3
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"voltage_source","from":[120,380],"to":[120,140],"label":"V(t)","highlight":true},
+    {"kind":"wire","from":[120,140],"to":[240,140]},
+    {"kind":"resistor","from":[240,140],"to":[380,140],"label":"R","highlight":true},
+    {"kind":"wire","from":[380,140],"to":[460,140]},
+    {"kind":"inductor","from":[460,140],"to":[620,140],"label":"L"},
+    {"kind":"wire","from":[620,140],"to":[700,140]},
+    {"kind":"wire","from":[700,140],"to":[700,380]},
+    {"kind":"capacitor","from":[700,380],"to":[500,380],"label":"C"},
+    {"kind":"wire","from":[500,380],"to":[120,380]},
+    {"kind":"ground","at":[400,380]},
+    {"kind":"label","at":[260,90],"text":"X_L = X_C → cancel"}
+  ]},
+  {"type":"label","id":"state","x":40,"y":450,"text":"\\omega_0 = \\dfrac{1}{\\sqrt{LC}} = 1000\\ \\text{rad/s},\\ |Z| = R = 10\\ \\Omega,\\ I_\\text{peak} = V_0/R","latex":true}
+] }
+```
+
+```scene step=3 narration="f = 220 Hz. Past resonance. X_L ≈ 138 Ω, X_C ≈ 72 Ω. Net reactance is inductive now." code_lines=4
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"voltage_source","from":[120,380],"to":[120,140],"label":"V(t)"},
+    {"kind":"wire","from":[120,140],"to":[240,140]},
+    {"kind":"resistor","from":[240,140],"to":[380,140],"label":"R"},
+    {"kind":"wire","from":[380,140],"to":[460,140]},
+    {"kind":"inductor","from":[460,140],"to":[620,140],"label":"L","highlight":true},
+    {"kind":"wire","from":[620,140],"to":[700,140]},
+    {"kind":"wire","from":[700,140],"to":[700,380]},
+    {"kind":"capacitor","from":[700,380],"to":[500,380],"label":"C"},
+    {"kind":"wire","from":[500,380],"to":[120,380]},
+    {"kind":"ground","at":[400,380]}
+  ]},
+  {"type":"label","id":"state","x":40,"y":450,"text":"f = 220\\ \\text{Hz}:\\ X_L - X_C \\approx 66\\ \\Omega,\\ |Z| \\approx 67\\ \\Omega","latex":true}
+] }
+```
+
+```scene step=4 narration="f = 500 Hz (well above resonance). X_L ≈ 314 Ω dominates. Inductor chokes the current." code_lines=5
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"voltage_source","from":[120,380],"to":[120,140],"label":"V(t)"},
+    {"kind":"wire","from":[120,140],"to":[240,140]},
+    {"kind":"resistor","from":[240,140],"to":[380,140],"label":"R"},
+    {"kind":"wire","from":[380,140],"to":[460,140]},
+    {"kind":"inductor","from":[460,140],"to":[620,140],"label":"L","highlight":true},
+    {"kind":"wire","from":[620,140],"to":[700,140]},
+    {"kind":"wire","from":[700,140],"to":[700,380]},
+    {"kind":"capacitor","from":[700,380],"to":[500,380],"label":"C"},
+    {"kind":"wire","from":[500,380],"to":[120,380]},
+    {"kind":"ground","at":[400,380]}
+  ]},
+  {"type":"label","id":"state","x":40,"y":450,"text":"f = 500\\ \\text{Hz}:\\ |Z| \\approx 282\\ \\Omega,\\ I_\\text{peak} \\approx 0.035\\ \\text{A}","latex":true}
+] }
+```
+
+## Quiz
+
+?? At resonance, what is the phase relationship between the current and the source voltage? Why does this matter?
+>> They are **in phase**. Because $X_L$ and $X_C$ cancel, the circuit behaves like a pure resistor. All power delivered by the source is real (dissipated in $R$) — none is stored and returned by the reactive elements on a cycle-average basis. This is why resonant circuits are used to pick out a single frequency: off-resonance, the current is small *and* phase-shifted.
+
+?? Halving the capacitance (C → C/2) moves the resonant frequency where, and by how much?
+>> $\omega_0 = 1/\sqrt{LC}$, so halving $C$ multiplies $\omega_0$ by $\sqrt{2} \approx 1.41$. The new resonance is at $\sim 225\text{ Hz}$ instead of $159\text{ Hz}$.
+
+?? If we increase $R$ (say from 10 Ω to 100 Ω), what happens to the peak current at resonance and to the "sharpness" of the resonance curve?
+>> Peak current drops 10× (since $I_\text{peak} = V_0/R$ at $\omega_0$). The quality factor $Q = \omega_0 L / R$ also drops 10× (from 10 to 1), so the resonance curve becomes **much broader** — the bandwidth $\Delta\omega = \omega_0/Q$ grows 10×. High $Q$ = sharp, selective filter; low $Q$ = broad, poor selectivity.

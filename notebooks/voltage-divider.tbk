@@ -1,0 +1,120 @@
+---
+version: 0.1
+title: Voltage Divider
+subject: electronics
+author: Teachbook starter
+---
+
+# Voltage Divider
+
+Two resistors in series across a source split the input voltage in
+proportion to their resistances. This is the single most reused idea in
+analog electronics — bias networks, sensor interfaces, level shifters,
+volume controls, and the first stage of most op-amp configurations all
+start here.
+
+$$
+V_\text{out} = V_\text{in}\,\frac{R_2}{R_1 + R_2}
+$$
+
+We walk a concrete 12 V source through three pairs of resistors and watch
+the output tap move.
+
+```text
+1. KVL around the loop: V_in = I (R1 + R2)
+2. Current I = V_in / (R1 + R2)
+3. V_out = I * R2 = V_in * R2 / (R1 + R2)
+4. Change the ratio, V_out scales with it.
+```
+
+## Walkthrough
+
+```scene step=0 narration="Start with V_in = 12 V and two equal resistors R1 = R2 = 1 kΩ. Before we compute, notice symmetry — equal resistors must split equally." code_lines=1
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"battery","from":[150,380],"to":[150,140],"label":"V_in = 12 V"},
+    {"kind":"wire","from":[150,140],"to":[450,140]},
+    {"kind":"resistor","from":[450,140],"to":[450,240],"label":"R1 = 1 kΩ"},
+    {"kind":"node","at":[450,240],"label":"V_out"},
+    {"kind":"resistor","from":[450,240],"to":[450,380],"label":"R2 = 1 kΩ"},
+    {"kind":"wire","from":[450,380],"to":[600,380]},
+    {"kind":"wire","from":[450,380],"to":[150,380]},
+    {"kind":"ground","at":[600,380]},
+    {"kind":"label","at":[40,80],"text":"Loop not yet analyzed"}
+  ]},
+  {"type":"label","id":"state","x":40,"y":450,"text":"V_\\text{out} = ?","latex":true}
+] }
+```
+
+```scene step=1 narration="Apply KVL. Current through the loop is I = V_in / (R1 + R2) = 12 / 2000 = 6 mA. Both resistors carry the same current." code_lines=2
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"battery","from":[150,380],"to":[150,140],"label":"12 V"},
+    {"kind":"wire","from":[150,140],"to":[450,140]},
+    {"kind":"resistor","from":[450,140],"to":[450,240],"label":"R1 = 1 kΩ","highlight":true},
+    {"kind":"node","at":[450,240],"label":"V_out"},
+    {"kind":"resistor","from":[450,240],"to":[450,380],"label":"R2 = 1 kΩ","highlight":true},
+    {"kind":"wire","from":[450,380],"to":[600,380]},
+    {"kind":"wire","from":[450,380],"to":[150,380]},
+    {"kind":"ground","at":[600,380]},
+    {"kind":"label","at":[40,80],"text":"I flows in one loop →"}
+  ]},
+  {"type":"label","id":"state","x":40,"y":450,"text":"I = \\frac{V_\\text{in}}{R_1 + R_2} = \\frac{12}{2000} = 6\\ \\text{mA}","latex":true}
+] }
+```
+
+```scene step=2 narration="V_out is the voltage across R2 alone: V_out = I * R2 = 6 mA × 1 kΩ = 6 V. Half of V_in — as symmetry predicted." code_lines=3
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"battery","from":[150,380],"to":[150,140],"label":"12 V"},
+    {"kind":"wire","from":[150,140],"to":[450,140]},
+    {"kind":"resistor","from":[450,140],"to":[450,240],"label":"R1 = 1 kΩ"},
+    {"kind":"node","at":[450,240],"label":"V_out = 6 V"},
+    {"kind":"resistor","from":[450,240],"to":[450,380],"label":"R2 = 1 kΩ","highlight":true},
+    {"kind":"wire","from":[450,380],"to":[600,380]},
+    {"kind":"wire","from":[450,380],"to":[150,380]},
+    {"kind":"ground","at":[600,380]}
+  ]},
+  {"type":"label","id":"state","x":40,"y":450,"text":"V_\\text{out} = I R_2 = V_\\text{in}\\,\\dfrac{R_2}{R_1 + R_2} = 6\\ \\text{V}","latex":true}
+] }
+```
+
+```scene step=3 narration="Swap to R1 = 4 kΩ, R2 = 1 kΩ. The bigger resistor drops more voltage. V_out = 12 × 1/5 = 2.4 V." code_lines=4
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"battery","from":[150,380],"to":[150,140],"label":"12 V"},
+    {"kind":"wire","from":[150,140],"to":[450,140]},
+    {"kind":"resistor","from":[450,140],"to":[450,240],"label":"R1 = 4 kΩ","highlight":true},
+    {"kind":"node","at":[450,240],"label":"V_out = 2.4 V"},
+    {"kind":"resistor","from":[450,240],"to":[450,380],"label":"R2 = 1 kΩ"},
+    {"kind":"wire","from":[450,380],"to":[600,380]},
+    {"kind":"wire","from":[450,380],"to":[150,380]},
+    {"kind":"ground","at":[600,380]}
+  ]},
+  {"type":"label","id":"state","x":40,"y":450,"text":"V_\\text{out} = 12 \\cdot \\dfrac{1}{5} = 2.4\\ \\text{V}\\ \\ \\text{(R_1 drops 9.6 V)}","latex":true}
+] }
+```
+
+```scene step=4 narration="Flip it: R1 = 1 kΩ, R2 = 4 kΩ. Now R2 takes the lion's share. V_out = 12 × 4/5 = 9.6 V." code_lines=4
+{ "primitives": [
+  {"type":"circuit","elements":[
+    {"kind":"battery","from":[150,380],"to":[150,140],"label":"12 V"},
+    {"kind":"wire","from":[150,140],"to":[450,140]},
+    {"kind":"resistor","from":[450,140],"to":[450,240],"label":"R1 = 1 kΩ"},
+    {"kind":"node","at":[450,240],"label":"V_out = 9.6 V"},
+    {"kind":"resistor","from":[450,240],"to":[450,380],"label":"R2 = 4 kΩ","highlight":true},
+    {"kind":"wire","from":[450,380],"to":[600,380]},
+    {"kind":"wire","from":[450,380],"to":[150,380]},
+    {"kind":"ground","at":[600,380]}
+  ]},
+  {"type":"label","id":"state","x":40,"y":450,"text":"V_\\text{out} = 12 \\cdot \\dfrac{4}{5} = 9.6\\ \\text{V}","latex":true}
+] }
+```
+
+## Quiz
+
+?? What happens to $V_\text{out}$ if a load resistor $R_L$ is connected from the output tap to ground, and $R_L$ is comparable to $R_2$?
+>> $R_L$ appears in parallel with $R_2$, lowering the lower-leg resistance to $R_2 \| R_L$. That shifts the divider ratio and $V_\text{out}$ drops. A rule of thumb: make $R_L \gtrsim 10\,R_2$ to keep loading error under ~10 %, or buffer the output with an op-amp voltage follower.
+
+?? You need $V_\text{out} = 3.3\text{ V}$ from a 5 V rail. Give a sensible pair of resistor values and explain the tradeoff between small and large values.
+>> Any pair with ratio $R_2/(R_1+R_2) = 0.66$ works — e.g. $R_1 = 1.7\text{ k}\Omega, R_2 = 3.3\text{ k}\Omega$, or $10\times$ that. Smaller resistors waste more power ($P = V_\text{in}^2/(R_1+R_2)$) but load better; larger resistors save power but are noisier and more sensitive to the downstream load. In the kΩ–tens of kΩ range for signal dividers is usually right.
