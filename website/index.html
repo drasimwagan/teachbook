@@ -57,6 +57,7 @@
       <nav class="hidden sm:flex items-center gap-6 text-sm">
         <a href="#features" class="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">Features</a>
         <a href="#subjects" class="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">Subjects</a>
+        <a href="#gallery" class="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">Gallery</a>
         <a href="#plugins" class="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">Plugins</a>
         <a href="#install" class="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">Install</a>
         <a href="https://github.com/drasimwagan/teachbook" class="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">GitHub</a>
@@ -69,7 +70,7 @@
     <div class="max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-28 text-center">
       <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 px-3 py-1 text-xs font-medium text-blue-800 dark:text-blue-200 mb-6">
         <span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-        v0.1 — first public release
+        v0.2 — Pyodide Run pane, drag-to-edit, test mode
       </div>
 
       <h1 class="text-4xl sm:text-6xl font-bold tracking-tight mb-5">
@@ -84,7 +85,7 @@
         <a href="https://github.com/drasimwagan/teachbook/releases/latest"
            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 font-medium shadow-sm">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
-          Download v0.1.0
+          Download v0.2.0
         </a>
         <a href="https://github.com/drasimwagan/teachbook"
            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 px-5 py-3 font-medium">
@@ -242,6 +243,32 @@
           <h3 class="font-semibold mb-2">Local-first, open source</h3>
           <p class="text-sm text-zinc-600 dark:text-zinc-400">Runs on your machine; uses your Claude Code login; stores notebooks under <code class="text-xs bg-zinc-100 dark:bg-zinc-800 px-1 rounded">~/Teachbook</code>. No accounts, no server, no telemetry. MIT.</p>
         </div>
+
+        <!-- v0.2 additions -->
+
+        <div class="rounded-xl border border-emerald-200 dark:border-emerald-900 bg-white dark:bg-zinc-900 p-6">
+          <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center mb-4 text-emerald-600 dark:text-emerald-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 5l11 7-11 7V5z"/></svg>
+          </div>
+          <h3 class="font-semibold mb-2">Run the Python <span class="text-[10px] align-middle rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 px-1.5 py-0.5 ml-1">new in v0.2</span></h3>
+          <p class="text-sm text-zinc-600 dark:text-zinc-400">Toggle the Run drawer to execute the notebook's code in Pyodide. Inject the current scene's primitives as Python globals; save scratch experiments to disk.</p>
+        </div>
+
+        <div class="rounded-xl border border-blue-200 dark:border-blue-900 bg-white dark:bg-zinc-900 p-6">
+          <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center mb-4 text-blue-600 dark:text-blue-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 9l3-3m0 0l-3-3m3 3H7a4 4 0 00-4 4v8m8-4l-3 3m0 0l3 3m-3-3h10a4 4 0 004-4v-8"/></svg>
+          </div>
+          <h3 class="font-semibold mb-2">Drag to edit <span class="text-[10px] align-middle rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-1.5 py-0.5 ml-1">new in v0.2</span></h3>
+          <p class="text-sm text-zinc-600 dark:text-zinc-400">Grab any shape or label in the visualization. Drop it somewhere new; the source updates in place. Undo reverses a bad drag.</p>
+        </div>
+
+        <div class="rounded-xl border border-amber-200 dark:border-amber-900 bg-white dark:bg-zinc-900 p-6">
+          <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-950 flex items-center justify-center mb-4 text-amber-600 dark:text-amber-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <h3 class="font-semibold mb-2">Test mode <span class="text-[10px] align-middle rounded bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 px-1.5 py-0.5 ml-1">new in v0.2</span></h3>
+          <p class="text-sm text-zinc-600 dark:text-zinc-400">Students answer quiz questions; Claude grades against the rubric. Portable progress JSONs let teachers read every student's answer and score.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -250,7 +277,7 @@
   <section id="subjects" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
     <div class="text-center mb-12">
       <div class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-3">One engine, every subject</div>
-      <h2 class="text-3xl font-bold mb-3">15 notebooks ship out of the box.</h2>
+      <h2 class="text-3xl font-bold mb-3">17 notebooks ship out of the box.</h2>
       <p class="text-zinc-600 dark:text-zinc-400 max-w-xl mx-auto">Built-in examples covering 7 subject areas. Use them as-is, fork them, or ask Claude to generate your own.</p>
     </div>
 
@@ -294,7 +321,7 @@
       <div class="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 p-4">
         <div class="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300 mb-2">Electronics</div>
         <div class="text-zinc-700 dark:text-zinc-300 space-y-1 text-xs">
-          <div>RC Circuit (schematic)</div><div>RC Circuit (charging curve)</div>
+          <div>RC Circuit (schematic)</div><div>RC Circuit (charging curve)</div><div>Voltage Divider</div><div>RLC Resonance</div>
         </div>
       </div>
       <div class="rounded-lg border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 p-4 flex items-center justify-center text-center">
@@ -306,8 +333,180 @@
     </div>
   </section>
 
+  <!-- Gallery -->
+  <section id="gallery" class="bg-zinc-50 dark:bg-zinc-900/50 border-y border-zinc-200 dark:border-zinc-800">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+      <div class="text-center mb-10">
+        <div class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-3">Gallery</div>
+        <h2 class="text-3xl font-bold mb-3">All 17 bundled notebooks.</h2>
+        <p class="text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
+          Every bundled notebook, grouped by subject. Each file is Markdown with YAML frontmatter,
+          scene fences, and an optional quiz section — open it in Teachbook, or read the raw
+          <code class="text-xs bg-zinc-100 dark:bg-zinc-800 px-1 rounded">.tbk</code> source on GitHub.
+        </p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+        <!-- Algorithms -->
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/binary-search.tbk" class="group rounded-lg border border-blue-200 dark:border-blue-900 bg-white dark:bg-zinc-900 p-4 hover:border-blue-400 dark:hover:border-blue-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">Algorithms</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">7 steps</span>
+          </div>
+          <div class="font-semibold">Binary Search</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Halve a sorted array until the target is found (or isn't).</div>
+        </a>
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/bubble-sort.tbk" class="group rounded-lg border border-blue-200 dark:border-blue-900 bg-white dark:bg-zinc-900 p-4 hover:border-blue-400 dark:hover:border-blue-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">Algorithms</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">7 steps</span>
+          </div>
+          <div class="font-semibold">Bubble Sort</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Adjacent-pair comparison with the largest element bubbling to the end.</div>
+        </a>
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/merge-sort.tbk" class="group rounded-lg border border-blue-200 dark:border-blue-900 bg-white dark:bg-zinc-900 p-4 hover:border-blue-400 dark:hover:border-blue-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">Algorithms</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">11 steps</span>
+          </div>
+          <div class="font-semibold">Merge Sort</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Real execution trace: split, recurse, merge ordered halves.</div>
+        </a>
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/bfs-graph.tbk" class="group rounded-lg border border-blue-200 dark:border-blue-900 bg-white dark:bg-zinc-900 p-4 hover:border-blue-400 dark:hover:border-blue-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">Algorithms</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">8 steps</span>
+          </div>
+          <div class="font-semibold">BFS on a Graph</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Level-order traversal with the frontier growing outward.</div>
+        </a>
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/dijkstra.tbk" class="group rounded-lg border border-blue-200 dark:border-blue-900 bg-white dark:bg-zinc-900 p-4 hover:border-blue-400 dark:hover:border-blue-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">Algorithms</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">10 steps</span>
+          </div>
+          <div class="font-semibold">Dijkstra's Algorithm</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Shortest paths with a priority queue and edge relaxation.</div>
+        </a>
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/lcs-dp.tbk" class="group rounded-lg border border-blue-200 dark:border-blue-900 bg-white dark:bg-zinc-900 p-4 hover:border-blue-400 dark:hover:border-blue-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">Algorithms</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">11 steps</span>
+          </div>
+          <div class="font-semibold">Longest Common Subsequence (DP)</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Classic 2D DP table filled row-by-row with backtrack.</div>
+        </a>
+
+        <!-- Physics -->
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/projectile-motion.tbk" class="group rounded-lg border border-emerald-200 dark:border-emerald-900 bg-white dark:bg-zinc-900 p-4 hover:border-emerald-400 dark:hover:border-emerald-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Physics</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">6 steps</span>
+          </div>
+          <div class="font-semibold">Projectile Motion</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Parabolic trajectory; vertical velocity → 0 at the peak.</div>
+        </a>
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/simple-harmonic-motion.tbk" class="group rounded-lg border border-emerald-200 dark:border-emerald-900 bg-white dark:bg-zinc-900 p-4 hover:border-emerald-400 dark:hover:border-emerald-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Physics</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">9 steps</span>
+          </div>
+          <div class="font-semibold">Simple Harmonic Motion</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Spring-mass oscillation; position, velocity, and energy.</div>
+        </a>
+
+        <!-- Biology -->
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/mitosis.tbk" class="group rounded-lg border border-lime-200 dark:border-lime-900 bg-white dark:bg-zinc-900 p-4 hover:border-lime-400 dark:hover:border-lime-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-lime-700 dark:text-lime-300">Biology</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">7 steps</span>
+          </div>
+          <div class="font-semibold">Mitosis</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Prophase → metaphase → anaphase → telophase, chromosome by chromosome.</div>
+        </a>
+
+        <!-- Chemistry -->
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/methane-combustion.tbk" class="group rounded-lg border border-rose-200 dark:border-rose-900 bg-white dark:bg-zinc-900 p-4 hover:border-rose-400 dark:hover:border-rose-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-rose-700 dark:text-rose-300">Chemistry</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">8 steps</span>
+          </div>
+          <div class="font-semibold">Methane Combustion</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">CH₄ + 2 O₂ → CO₂ + 2 H₂O, atom-balancing step-by-step.</div>
+        </a>
+
+        <!-- ML -->
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/perceptron-forward.tbk" class="group rounded-lg border border-violet-200 dark:border-violet-900 bg-white dark:bg-zinc-900 p-4 hover:border-violet-400 dark:hover:border-violet-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-violet-700 dark:text-violet-300">Machine Learning</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">7 steps</span>
+          </div>
+          <div class="font-semibold">Perceptron Forward Pass</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Weighted sum → activation, neuron by neuron.</div>
+        </a>
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/convolution.tbk" class="group rounded-lg border border-violet-200 dark:border-violet-900 bg-white dark:bg-zinc-900 p-4 hover:border-violet-400 dark:hover:border-violet-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-violet-700 dark:text-violet-300">Machine Learning</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">8 steps</span>
+          </div>
+          <div class="font-semibold">2D Convolution</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Kernel sliding across an image; each cell is a dot product.</div>
+        </a>
+
+        <!-- Quantum -->
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/qubit-gates.tbk" class="group rounded-lg border border-indigo-200 dark:border-indigo-900 bg-white dark:bg-zinc-900 p-4 hover:border-indigo-400 dark:hover:border-indigo-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Quantum</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">6 steps</span>
+          </div>
+          <div class="font-semibold">Single-Qubit Gates</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">H, X, Y, Z, S, T rotations visualized on the Bloch sphere.</div>
+        </a>
+
+        <!-- Electronics -->
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/rc-circuit.tbk" class="group rounded-lg border border-amber-200 dark:border-amber-900 bg-white dark:bg-zinc-900 p-4 hover:border-amber-400 dark:hover:border-amber-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">Electronics</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">8 steps</span>
+          </div>
+          <div class="font-semibold">RC Circuit — charging curve</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Plot V_C(t) as the capacitor charges through a resistor.</div>
+        </a>
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/rc-circuit-schematic.tbk" class="group rounded-lg border border-amber-200 dark:border-amber-900 bg-white dark:bg-zinc-900 p-4 hover:border-amber-400 dark:hover:border-amber-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">Electronics</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">5 steps</span>
+          </div>
+          <div class="font-semibold">RC Circuit — schematic</div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Same story told with symbols; highlights dominant element per step.</div>
+        </a>
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/voltage-divider.tbk" class="group rounded-lg border border-amber-200 dark:border-amber-900 bg-white dark:bg-zinc-900 p-4 hover:border-amber-400 dark:hover:border-amber-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">Electronics</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">5 steps</span>
+          </div>
+          <div class="font-semibold">Voltage Divider <span class="text-[10px] rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-1 py-0.5 ml-1">new</span></div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">V_out = V_in · R₂/(R₁+R₂) across three resistor ratios.</div>
+        </a>
+        <a href="https://github.com/drasimwagan/teachbook/blob/main/notebooks/rlc-resonance.tbk" class="group rounded-lg border border-amber-200 dark:border-amber-900 bg-white dark:bg-zinc-900 p-4 hover:border-amber-400 dark:hover:border-amber-600 transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">Electronics</span>
+            <span class="text-[10px] text-zinc-500 tabular-nums">5 steps</span>
+          </div>
+          <div class="font-semibold">RLC Series Resonance <span class="text-[10px] rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-1 py-0.5 ml-1">new</span></div>
+          <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Frequency sweep through ω₀ = 1/√(LC); impedance bottoms out at R.</div>
+        </a>
+      </div>
+
+      <div class="mt-10 text-center text-xs text-zinc-500">
+        128 scenes total · contribute yours via the
+        <a href="https://github.com/drasimwagan/teachbook/pulls" class="text-blue-600 dark:text-blue-400 hover:underline">GitHub repo</a>
+      </div>
+    </div>
+  </section>
+
   <!-- Plugins -->
-  <section id="plugins" class="bg-zinc-50 dark:bg-zinc-900/50 border-y border-zinc-200 dark:border-zinc-800">
+  <section id="plugins" class="bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
       <div class="grid md:grid-cols-2 gap-12 items-start">
         <div>
