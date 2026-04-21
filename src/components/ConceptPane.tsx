@@ -18,6 +18,14 @@ import {
   sceneTemplate,
   stepAtLine,
 } from "../lib/editor-actions";
+import {
+  formatSceneAtCursor,
+  lintGutterExt,
+  lintStub,
+  pushDiagnostics,
+  sceneFold,
+} from "../lib/scene-editor-ext";
+import type { ParseDiagnostic } from "../lib/tbk-parser";
 import type { Notebook } from "../types";
 import type { TestProgress } from "../lib/progress";
 
@@ -30,7 +38,7 @@ type Mode = "read" | "edit";
 type Props = {
   source: string;
   onSourceChange: (s: string) => void;
-  errors: string[];
+  errors: ParseDiagnostic[];
   activeSceneRange?: [number, number];
   notebook: Notebook | null;
   currentStep: number;
@@ -78,6 +86,9 @@ export default function ConceptPane({
       markdown({ codeLanguages: [sceneLang] }),
       highlightField,
       sceneHighlightTheme,
+      sceneFold,
+      lintStub,
+      lintGutterExt,
       EditorView.lineWrapping,
       EditorView.updateListener.of((u) => {
         if (u.selectionSet || u.docChanged) {
@@ -89,6 +100,14 @@ export default function ConceptPane({
     ],
     [],
   );
+
+  // Push parse diagnostics onto the editor whenever the errors prop changes.
+  useEffect(() => {
+    if (mode !== "edit") return;
+    const view = ref.current?.view;
+    if (!view) return;
+    pushDiagnostics(view, errors);
+  }, [errors, mode]);
 
   useEffect(() => {
     if (mode !== "edit") return;
@@ -144,6 +163,13 @@ export default function ConceptPane({
     if (view) openFind(view);
   };
 
+  const onFormatScene = () => {
+    const view = ref.current?.view;
+    if (!view) return;
+    formatSceneAtCursor(view);
+    view.focus();
+  };
+
   return (
     <section className="flex flex-col border-r border-zinc-200 dark:border-zinc-800 overflow-hidden">
       <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-500 shrink-0">
@@ -172,6 +198,13 @@ export default function ConceptPane({
                 className="border-l border-zinc-300 dark:border-zinc-700 px-2 py-0.5 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800"
               >
                 Find
+              </button>
+              <button
+                onClick={onFormatScene}
+                title="Pretty-print the scene JSON at cursor (indent 2)"
+                className="border-l border-zinc-300 dark:border-zinc-700 px-2 py-0.5 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Format
               </button>
             </div>
           )}
@@ -281,7 +314,13 @@ export default function ConceptPane({
         <div className="border-t border-amber-300 bg-amber-50 dark:bg-amber-950 dark:border-amber-900 p-2 text-xs space-y-1 max-h-32 overflow-auto shrink-0">
           {errors.map((e, i) => (
             <div key={i} className="text-amber-800 dark:text-amber-200 font-mono">
-              {e}
+              {e.startLine != null && (
+                <span className="text-amber-600 dark:text-amber-400">
+                  L{e.startLine}
+                  {e.endLine && e.endLine !== e.startLine ? `–${e.endLine}` : ""}:{" "}
+                </span>
+              )}
+              {e.message}
             </div>
           ))}
         </div>

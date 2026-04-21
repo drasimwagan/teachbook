@@ -5,13 +5,21 @@ import { parse as parseYaml } from "yaml";
 import type { Root, Node, Yaml, Code, Heading, Paragraph } from "mdast";
 import type { Cell, Notebook, NotebookMetadata, Scene } from "../types";
 
+export type ParseDiagnostic = {
+  message: string;
+  /** 1-indexed inclusive source-file line where the problem begins. */
+  startLine?: number;
+  /** 1-indexed inclusive source-file line where the problem ends. */
+  endLine?: number;
+};
+
 export type ParseResult = {
   notebook: Notebook;
-  errors: string[];
+  errors: ParseDiagnostic[];
 };
 
 export function parseTbk(source: string): ParseResult {
-  const errors: string[] = [];
+  const errors: ParseDiagnostic[] = [];
   const tree = unified()
     .use(remarkParse)
     .use(remarkFrontmatter, ["yaml"])
@@ -55,7 +63,11 @@ export function parseTbk(source: string): ParseResult {
         const parsed = parseYaml((node as Yaml).value) ?? {};
         metadata = { ...metadata, ...parsed };
       } catch (e) {
-        errors.push(`Invalid YAML frontmatter: ${String(e)}`);
+        errors.push({
+          message: `Invalid YAML frontmatter: ${String(e)}`,
+          startLine: node.position?.start.line,
+          endLine: node.position?.end.line,
+        });
       }
       continue;
     }
@@ -80,9 +92,11 @@ export function parseTbk(source: string): ParseResult {
         try {
           const scene = JSON.parse(c.value) as Scene;
           if (!scene.primitives || !Array.isArray(scene.primitives)) {
-            errors.push(
-              `Scene at step=${meta.step ?? "?"} missing 'primitives' array`,
-            );
+            errors.push({
+              message: `Scene at step=${meta.step ?? "?"} missing 'primitives' array`,
+              startLine: c.position?.start.line,
+              endLine: c.position?.end.line,
+            });
             continue;
           }
           current.steps.push({
@@ -93,9 +107,11 @@ export function parseTbk(source: string): ParseResult {
             sourceEndLine: c.position?.end.line,
           });
         } catch (e) {
-          errors.push(
-            `Invalid scene JSON at step=${meta.step ?? "?"}: ${String(e)}`,
-          );
+          errors.push({
+            message: `Invalid scene JSON at step=${meta.step ?? "?"}: ${String(e)}`,
+            startLine: c.position?.start.line,
+            endLine: c.position?.end.line,
+          });
         }
         continue;
       }

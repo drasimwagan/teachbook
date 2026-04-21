@@ -9,7 +9,7 @@ import GenerateDialog from "./components/GenerateDialog";
 import ExamplesDialog from "./components/ExamplesDialog";
 import InsertStepDialog from "./components/InsertStepDialog";
 import RunPane from "./components/RunPane";
-import { parseTbk } from "./lib/tbk-parser";
+import { parseTbk, type ParseDiagnostic } from "./lib/tbk-parser";
 import { updatePrimitiveInSource, type PrimitivePatch } from "./lib/scene-edit";
 import {
   emptyProgress,
@@ -46,7 +46,7 @@ function App() {
   const [currentStep, setCurrentStep] = useState(0);
   const [currentPath, setCurrentPath] = useState<string | null>(null);
   const [source, setSource] = useState<string>(WELCOME);
-  const [parseErrors, setParseErrors] = useState<string[]>([]);
+  const [parseErrors, setParseErrors] = useState<ParseDiagnostic[]>([]);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [insertAfter, setInsertAfter] = useState<number | null>(null);
@@ -148,7 +148,7 @@ function App() {
         setCurrentStep(0);
       });
     } catch (e) {
-      setParseErrors([`Failed to open: ${String(e)}`]);
+      setParseErrors([{ message: `Failed to open: ${String(e)}` }]);
     }
   }, [snapshotAnd]);
 
@@ -179,7 +179,7 @@ function App() {
       await invoke("save_notebook", { path, contents: source });
       setCurrentPath(path);
     } catch (e) {
-      setParseErrors([`Failed to save: ${String(e)}`]);
+      setParseErrors([{ message: `Failed to save: ${String(e)}` }]);
     }
   }, [currentPath, source, notebook]);
 
@@ -218,7 +218,7 @@ function App() {
       await invoke("save_notebook", { path, contents: serializeProgress(progress) });
       setProgressPath(path);
     } catch (e) {
-      setParseErrors([`Save progress failed: ${String(e)}`]);
+      setParseErrors([{ message: `Save progress failed: ${String(e)}` }]);
     }
   }, [progress, progressPath]);
 
@@ -240,7 +240,7 @@ function App() {
       setProgress(parseProgress(contents));
       setProgressPath(selected);
     } catch (e) {
-      setParseErrors([`Load progress failed: ${String(e)}`]);
+      setParseErrors([{ message: `Load progress failed: ${String(e)}` }]);
     }
   }, []);
 
@@ -259,7 +259,7 @@ function App() {
         patch,
       );
       if (!res.ok) {
-        setParseErrors([`drag: ${res.error}`]);
+        setParseErrors([{ message: `drag: ${res.error}` }]);
         return;
       }
       snapshotAnd("drag primitive", () => setSource(res.source));
