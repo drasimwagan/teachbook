@@ -74,14 +74,16 @@ export function parseTbk(source: string): ParseResult {
 
     if (node.type === "heading") {
       const h = node as Heading;
-      const text = nodeToText(h);
-      if (/^quiz\b/i.test(text.trim())) {
+      const plain = nodeToText(h);
+      if (/^quiz\b/i.test(plain.trim())) {
         pushCell();
         current = { kind: "quiz", prose: "", steps: [] };
         inQuiz = true;
         continue;
       }
-      proseParts.push(`${"#".repeat(h.depth)} ${text}`);
+      // Preserve raw source (keeps **bold**, *italic*, `code`, $math$ inline
+      // formatting intact for the downstream ReactMarkdown + remark-math).
+      proseParts.push(rawSlice(source, node) ?? `${"#".repeat(h.depth)} ${plain}`);
       continue;
     }
 
@@ -137,6 +139,13 @@ export function parseTbk(source: string): ParseResult {
           continue;
         }
       }
+      // Preserve raw source for prose paragraphs so Markdown / math markers
+      // survive into the Read view's ReactMarkdown pipeline.
+      const raw = rawSlice(source, p);
+      if (raw) {
+        proseParts.push(raw);
+        continue;
+      }
       proseParts.push(text);
       continue;
     }
@@ -169,6 +178,21 @@ function parseSceneMeta(meta: string): Record<string, string> {
     out[m[1]] = m[3] ?? m[4] ?? "";
   }
   return out;
+}
+
+/** Slice the raw source between a node's position offsets, preserving all
+ *  original markdown formatting (bold, italic, math, links, code spans).
+ *  Returns null if the node lacks position info. */
+function rawSlice(source: string, node: Node): string | null {
+  const pos = node.position;
+  if (
+    !pos ||
+    typeof pos.start?.offset !== "number" ||
+    typeof pos.end?.offset !== "number"
+  ) {
+    return null;
+  }
+  return source.slice(pos.start.offset, pos.end.offset);
 }
 
 function nodeToText(node: Node): string {

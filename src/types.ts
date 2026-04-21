@@ -161,6 +161,9 @@ export type NotebookMetadata = {
   subject: string;
   author?: string;
   version: string;
+  /** Optional free-form tags (e.g. ["intro", "sorting", "assignment"]).
+   *  Populated from YAML frontmatter. Used by the Examples filter. */
+  tags?: string[];
 };
 
 export type Notebook = {

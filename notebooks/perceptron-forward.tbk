@@ -3,6 +3,7 @@ version: 0.1
 title: Neural Network Forward Pass
 subject: machine-learning
 author: Teachbook starter
+tags: [intro, neural-networks]
 ---
 
 # Forward Pass Through a 2-3-1 Network

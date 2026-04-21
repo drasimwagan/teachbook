@@ -3,6 +3,7 @@ version: 0.1
 title: Voltage Divider
 subject: electronics
 author: Teachbook starter
+tags: [intro, passive, analog]
 ---
 
 # Voltage Divider

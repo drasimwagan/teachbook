@@ -200,10 +200,61 @@ Follow-ups (not MVP):
 - Rubric-less quizzes (use Claude to grade against the notebook prose
   alone)
 
-### Phase 5 — Community — not started
-- [ ] Notebook gallery website (GitHub Pages over a curated repo)
-- [ ] API-key auth mode (fallback for users without Claude Code)
-- [ ] Signed third-party plugins (would require a security model)
+### Phase 5 — Community (mostly deferred)
+- [x] Notebook gallery website (partially — the landing page has a
+  17-notebook gallery section at /teachbook/#gallery)
+- [ ] API-key auth mode (fallback for users without Claude Code) —
+  **deferred; needs a security-design conversation about secret
+  storage**
+- [ ] Signed third-party plugins — **indefinitely deferred, out of
+  current scope**
+
+### Phase 6 — Quiz enrichment — planned
+- [ ] Structured quiz syntax in `## Quiz` sections:
+      `?? [mcq]`, `?? [truefalse]`, `?? [numeric tol=0.01]`,
+      `?? [short]` with option lines (`- [x] correct`) and rubric
+      or explanation after `>>`
+- [ ] `Cell.quiz: { type, question, options?, correctIndex?,
+      correctValue?, tolerance?, explanation? }` schema extension
+- [ ] Per-type rendering in test mode: radio group, toggle, numeric
+      input, textarea
+- [ ] Deterministic local grading for mcq / truefalse / numeric;
+      Claude grading only for short-answer
+- [ ] Author-time quiz validator (e.g. "no correct option marked")
+
+### Phase 7 — AI-generated quiz — planned, depends on Phase 6
+- [ ] "Quiz me on this step" button in the Chat pane
+- [ ] Claude generates a single question from the current step's
+      narration, scene JSON, and surrounding prose
+- [ ] Student answer flows through the existing grading pipeline
+      and appends to the progress JSON
+- [ ] Generated questions can be saved back into the notebook as
+      real quiz cells
+
+### Phase 8 — Local-network federation — planned, **needs security sign-off**
+Goal: a teacher on the same LAN can push quizzes to enrolled
+students, and students can submit graded progress back — no server,
+no cloud, no accounts. Multi-session build with a non-trivial
+security surface.
+- [ ] Discovery via mDNS / Bonjour, service `_teachbook._tcp.local`
+      (Rust crate `mdns-sd`)
+- [ ] Trust model: **pairing via QR code** exchanging an ed25519
+      pubkey + a shared secret. Cert pinned at pairing time. Mutual
+      TLS thereafter. Fallback: manual IP entry with fingerprint
+      confirmation.
+- [ ] `~/Teachbook/peers.json` trust store: role (teacher/student),
+      pubkey, display name, last-seen IP
+- [ ] Tauri-side HTTPS server (axum/hyper) with a small REST surface:
+      `POST /quiz` (teacher → student), `POST /submission` (student →
+      teacher), `GET /ping`
+- [ ] Right-pane top section **Connections** UI: self, discovered
+      peers, paired peers with online/offline dot, inbox for pending
+      pairing requests with verification fingerprint
+
+### Phase 9 — AI assessments over federation — planned, depends on 7 + 8
+- [ ] AI-graded quiz submissions auto-sent to the enrolled teacher
+- [ ] Teacher dashboard: per-student score history, attempt counts,
+      per-question correctness
 
 ## Backlog (unsorted polish)
 

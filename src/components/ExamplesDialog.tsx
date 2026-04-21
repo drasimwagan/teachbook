@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { parseTbk } from "../lib/tbk-parser";
 
 type BundledNotebook = { filename: string; content: string };
 type UserNotebook = { filename: string; path: string; content: string };
+
+type Source = "bundled" | "personal";
 
 type Card = {
   filename: string;
@@ -14,6 +16,8 @@ type Card = {
   subject: string;
   steps: number;
   summary: string;
+  tags: string[];
+  source: Source;
 };
 
 type Props = {
@@ -44,11 +48,16 @@ function summarize(prose: string): string {
 function toCard(
   filename: string,
   content: string,
+  source: Source,
   path?: string,
 ): Card {
   const { notebook } = parseTbk(content);
   const firstProse =
     notebook.cells.find((c) => c.kind === "concept")?.prose ?? "";
+  const tagsRaw = notebook.metadata.tags;
+  const tags = Array.isArray(tagsRaw)
+    ? tagsRaw.map((t) => String(t).trim()).filter(Boolean)
+    : [];
   return {
     filename,
     content,
@@ -57,7 +66,32 @@ function toCard(
     subject: notebook.metadata.subject || "—",
     steps: notebook.totalSteps,
     summary: summarize(firstProse),
+    tags,
+    source,
   };
+}
+
+function applyFilter(
+  cards: Card[] | null,
+  source: Source | "all",
+  subject: string | null,
+  tag: string | null,
+  query: string,
+): Card[] | null {
+  if (cards === null) return null;
+  const q = query.trim().toLowerCase();
+  return cards.filter((c) => {
+    if (source !== "all" && c.source !== source) return false;
+    if (subject && c.subject !== subject) return false;
+    if (tag && !c.tags.includes(tag)) return false;
+    if (!q) return true;
+    return (
+      c.title.toLowerCase().includes(q) ||
+      c.filename.toLowerCase().includes(q) ||
+      c.summary.toLowerCase().includes(q) ||
+      c.tags.some((t) => t.toLowerCase().includes(q))
+    );
+  });
 }
 
 export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
@@ -65,6 +99,12 @@ export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
   const [userLib, setUserLib] = useState<Card[] | null>(null);
   const [userPath, setUserPath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Filter state
+  const [sourceFilter, setSourceFilter] = useState<Source | "all">("all");
+  const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [query, setQuery] = useState<string>("");
 
   useEffect(() => {
     if (!open) return;
@@ -82,12 +122,49 @@ export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
       invoke<string>("user_notebooks_path").catch(() => null),
     ])
       .then(([b, u, path]) => {
-        setBundled(b.map((nb) => toCard(nb.filename, nb.content)));
-        setUserLib(u.map((nb) => toCard(nb.filename, nb.content, nb.path)));
+        setBundled(b.map((nb) => toCard(nb.filename, nb.content, "bundled")));
+        setUserLib(
+          u.map((nb) => toCard(nb.filename, nb.content, "personal", nb.path)),
+        );
         setUserPath(path);
       })
       .catch((e) => setError(String(e)));
   }, [open]);
+
+  const allCards = useMemo<Card[]>(
+    () => [...(bundled ?? []), ...(userLib ?? [])],
+    [bundled, userLib],
+  );
+  const subjects = useMemo(
+    () => Array.from(new Set(allCards.map((c) => c.subject))).sort(),
+    [allCards],
+  );
+  const tags = useMemo(
+    () =>
+      Array.from(
+        new Set(allCards.flatMap((c) => c.tags)),
+      ).sort(),
+    [allCards],
+  );
+  const filteredBundled = useMemo(
+    () => applyFilter(bundled, sourceFilter, subjectFilter, tagFilter, query),
+    [bundled, sourceFilter, subjectFilter, tagFilter, query],
+  );
+  const filteredUser = useMemo(
+    () => applyFilter(userLib, sourceFilter, subjectFilter, tagFilter, query),
+    [userLib, sourceFilter, subjectFilter, tagFilter, query],
+  );
+  const clearFilters = () => {
+    setSourceFilter("all");
+    setSubjectFilter(null);
+    setTagFilter(null);
+    setQuery("");
+  };
+  const anyFilterActive =
+    sourceFilter !== "all" ||
+    subjectFilter !== null ||
+    tagFilter !== null ||
+    query.trim() !== "";
 
   if (!open) return null;
 
@@ -114,6 +191,79 @@ export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
             Close
           </button>
         </header>
+        <div className="border-b border-zinc-200 dark:border-zinc-800 px-4 py-3 shrink-0 space-y-2">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search title, filename, summary, or tag…"
+            className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-2 py-1 text-sm"
+          />
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <FilterChip
+              active={sourceFilter === "all"}
+              onClick={() => setSourceFilter("all")}
+            >
+              All sources
+            </FilterChip>
+            <FilterChip
+              active={sourceFilter === "bundled"}
+              onClick={() => setSourceFilter("bundled")}
+            >
+              Built-in
+            </FilterChip>
+            <FilterChip
+              active={sourceFilter === "personal"}
+              onClick={() => setSourceFilter("personal")}
+            >
+              Personal
+            </FilterChip>
+            <span className="mx-1 h-3 w-px bg-zinc-300 dark:bg-zinc-700" />
+            {subjects.length > 0 && (
+              <>
+                <FilterChip
+                  active={subjectFilter === null}
+                  onClick={() => setSubjectFilter(null)}
+                >
+                  Any subject
+                </FilterChip>
+                {subjects.map((s) => (
+                  <FilterChip
+                    key={s}
+                    active={subjectFilter === s}
+                    onClick={() =>
+                      setSubjectFilter(subjectFilter === s ? null : s)
+                    }
+                  >
+                    {s}
+                  </FilterChip>
+                ))}
+              </>
+            )}
+            {tags.length > 0 && (
+              <>
+                <span className="mx-1 h-3 w-px bg-zinc-300 dark:bg-zinc-700" />
+                {tags.map((t) => (
+                  <FilterChip
+                    key={t}
+                    active={tagFilter === t}
+                    onClick={() => setTagFilter(tagFilter === t ? null : t)}
+                  >
+                    #{t}
+                  </FilterChip>
+                ))}
+              </>
+            )}
+            {anyFilterActive && (
+              <button
+                onClick={clearFilters}
+                className="ml-auto text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 underline"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
         <div className="flex-1 overflow-auto p-4 space-y-6">
           {error && (
             <div className="rounded bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 px-3 py-2 text-xs font-mono">
@@ -121,11 +271,15 @@ export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
             </div>
           )}
 
-          <Section title="Built-in examples" cards={bundled} onSelect={onSelect} />
+          <Section
+            title="Built-in examples"
+            cards={filteredBundled}
+            onSelect={onSelect}
+          />
 
           <Section
             title="Your library"
-            cards={userLib}
+            cards={filteredUser}
             onSelect={onSelect}
             subtitle={
               userPath ? (
@@ -203,11 +357,47 @@ function Section({
                     {c.summary}
                   </p>
                 )}
+                {c.tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {c.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="text-[10px] rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-1.5 py-0.5"
+                      >
+                        #{t}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </button>
             </li>
           ))}
         </ul>
       )}
     </section>
+  );
+}
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={
+        "rounded-full px-2 py-0.5 text-[11px] border transition " +
+        (active
+          ? "bg-blue-600 text-white border-blue-600"
+          : "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-blue-400")
+      }
+    >
+      {children}
+    </button>
   );
 }

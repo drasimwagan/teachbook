@@ -3,6 +3,7 @@ version: 0.1
 title: Single-Qubit Gates on the Bloch Sphere
 subject: quantum
 author: Teachbook starter
+tags: [intro, gates]
 ---
 
 # Single-Qubit Gates on the Bloch Sphere

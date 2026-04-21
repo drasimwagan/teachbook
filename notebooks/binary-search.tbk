@@ -3,6 +3,7 @@ version: 0.1
 title: Binary Search
 subject: algorithms
 author: Teachbook starter
+tags: [intro, searching]
 ---
 
 # Binary Search
