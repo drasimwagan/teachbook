@@ -1,5 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useEscape } from "../lib/useEscape";
 // Vite ?raw import inlines the file at build time. The guide ships inside
 // the frontend bundle so it's available offline.
 import userGuideMd from "../../docs/USER_GUIDE.md?raw";
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export default function UserGuideDialog({ open, onClose }: Props) {
+  useEscape(open, onClose);
   if (!open) return null;
   return (
     <div

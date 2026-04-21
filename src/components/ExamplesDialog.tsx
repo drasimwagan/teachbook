@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { parseTbk } from "../lib/tbk-parser";
 import { getSettings } from "../lib/settings";
+import { useEscape } from "../lib/useEscape";
 import {
   fetchTeacherQuiz,
   listTeacherQuizzes,
@@ -101,6 +102,7 @@ function applyFilter(
 }
 
 export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
+  useEscape(open, onClose);
   const [bundled, setBundled] = useState<Card[] | null>(null);
   const [userLib, setUserLib] = useState<Card[] | null>(null);
   const [teacherLib, setTeacherLib] = useState<Card[] | null>(null);
@@ -142,36 +144,38 @@ export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
       })
       .catch((e) => setError(String(e)));
 
-    // Teacher library — best-effort. A missing server / unset URL is
-    // not an error, just an empty section.
-    (async () => {
-      try {
-        const s = await getSettings();
-        if (!s.teacher_url) {
-          setTeacherUrl(null);
-          setTeacherLib([]);
-          return;
-        }
-        setTeacherUrl(s.teacher_url);
-        const metas: TeacherQuizMeta[] = await listTeacherQuizzes(s.teacher_url);
-        const cards: Card[] = metas.map((m) => ({
-          filename: `${m.id}.tbk`,
-          // content lazy-fetched on click; seed with a placeholder
-          content: "",
-          title: m.title,
-          subject: m.subject || "—",
-          steps: 0,
-          summary: "Fetched from teacher — click to load.",
-          tags: m.tags,
-          source: "teacher",
-        }));
-        setTeacherLib(cards);
-      } catch (e) {
-        setTeacherError(e instanceof Error ? e.message : String(e));
-        setTeacherLib([]);
-      }
-    })();
+    refreshTeacher();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  const refreshTeacher = useCallback(async () => {
+    setTeacherLib(null);
+    setTeacherError(null);
+    try {
+      const s = await getSettings();
+      if (!s.teacher_url) {
+        setTeacherUrl(null);
+        setTeacherLib([]);
+        return;
+      }
+      setTeacherUrl(s.teacher_url);
+      const metas: TeacherQuizMeta[] = await listTeacherQuizzes(s.teacher_url);
+      const cards: Card[] = metas.map((m) => ({
+        filename: `${m.id}.tbk`,
+        content: "", // lazy-fetched on click
+        title: m.title,
+        subject: m.subject || "—",
+        steps: 0,
+        summary: "Fetched from teacher — click to load.",
+        tags: m.tags,
+        source: "teacher",
+      }));
+      setTeacherLib(cards);
+    } catch (e) {
+      setTeacherError(e instanceof Error ? e.message : String(e));
+      setTeacherLib([]);
+    }
+  }, []);
 
   const allCards = useMemo<Card[]>(
     () => [...(bundled ?? []), ...(userLib ?? []), ...(teacherLib ?? [])],
@@ -336,15 +340,24 @@ export default function ExamplesDialog({ open, onClose, onSelect }: Props) {
             }}
             subtitle={
               teacherUrl ? (
-                <>
-                  Connected to{" "}
-                  <code className="font-mono">{teacherUrl}</code>.
+                <span className="inline-flex items-center gap-2">
+                  <span>
+                    Connected to{" "}
+                    <code className="font-mono">{teacherUrl}</code>.
+                  </span>
+                  <button
+                    onClick={refreshTeacher}
+                    title="Re-fetch the teacher's quiz list"
+                    className="rounded border border-zinc-300 dark:border-zinc-700 px-1.5 py-0 text-[10px] hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    ↻ Refresh
+                  </button>
                   {teacherError && (
-                    <span className="ml-2 text-rose-600">
+                    <span className="text-rose-600">
                       (last error: {teacherError})
                     </span>
                   )}
-                </>
+                </span>
               ) : (
                 <>
                   No teacher URL configured. Open{" "}

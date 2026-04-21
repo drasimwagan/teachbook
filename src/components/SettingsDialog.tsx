@@ -9,6 +9,7 @@ import {
   type Settings,
 } from "../lib/settings";
 import { pingTeacher } from "../lib/teaching-api";
+import { useEscape } from "../lib/useEscape";
 
 type Props = {
   open: boolean;
@@ -22,6 +23,7 @@ type ProbeResult =
   | { state: "error"; message: string };
 
 export default function SettingsDialog({ open, onClose }: Props) {
+  useEscape(open, onClose);
   const [settings, setLocalSettings] = useState<Settings | null>(null);
   const [status, setStatus] = useState<ServerStatus | null>(null);
   const [saving, setSaving] = useState(false);

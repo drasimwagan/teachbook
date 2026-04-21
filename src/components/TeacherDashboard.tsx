@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { TestProgress, QuizAnswer } from "../lib/progress";
+import { useEscape } from "../lib/useEscape";
 
 type LocalSubmission = {
   id: string;
@@ -29,6 +30,7 @@ function fmtDate(iso?: string | null): string {
 }
 
 export default function TeacherDashboard({ open, onClose }: Props) {
+  useEscape(open, onClose);
   const [rows, setRows] = useState<LocalSubmission[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -55,6 +57,14 @@ export default function TeacherDashboard({ open, onClose }: Props) {
     setSelectedId(null);
     setDetail(null);
     refresh();
+  }, [open, refresh]);
+
+  // Auto-refresh every 3s while the dashboard is open. Cheap: we're only
+  // enumerating a directory on the local disk.
+  useEffect(() => {
+    if (!open) return;
+    const id = window.setInterval(refresh, 3000);
+    return () => window.clearInterval(id);
   }, [open, refresh]);
 
   useEffect(() => {
@@ -181,6 +191,7 @@ export default function TeacherDashboard({ open, onClose }: Props) {
                     <Th>Student</Th>
                     <Th>Test</Th>
                     <Th>Score</Th>
+                    <Th>Submitted</Th>
                     <Th>Received</Th>
                   </tr>
                 </thead>
@@ -230,6 +241,11 @@ export default function TeacherDashboard({ open, onClose }: Props) {
                               {r.correct}
                             </span>
                             <span className="text-zinc-500"> / {r.attempted}</span>
+                          </span>
+                        </Td>
+                        <Td>
+                          <span className="text-zinc-600 dark:text-zinc-400">
+                            {r.submitted_at ? fmtDate(r.submitted_at) : "—"}
                           </span>
                         </Td>
                         <Td>

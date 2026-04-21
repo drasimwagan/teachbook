@@ -62,6 +62,12 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [submitFlash, setSubmitFlash] = useState<
+    | { kind: "ok"; text: string }
+    | { kind: "err"; text: string }
+    | null
+  >(null);
+  const submitFlashTimer = useRef<number | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [serverRunning, setServerRunning] = useState<boolean>(false);
   const [testMode, setTestMode] = useState(false);
@@ -477,6 +483,8 @@ function App() {
                 <button
                   onClick={async () => {
                     if (!progress || !settings?.teacher_url) return;
+                    if (submitFlashTimer.current)
+                      window.clearTimeout(submitFlashTimer.current);
                     try {
                       const payload: TestProgress = {
                         ...progress,
@@ -490,24 +498,39 @@ function App() {
                         settings.teacher_url,
                         payload,
                       );
-                      // Persist the updated submission metadata locally too.
                       setProgress(payload);
-                      setParseErrors([
-                        {
-                          message: `Submitted to teacher (id: ${res.id}).`,
-                        },
-                      ]);
+                      setSubmitFlash({
+                        kind: "ok",
+                        text: `Sent · ${res.id}`,
+                      });
                     } catch (e) {
-                      setParseErrors([
-                        { message: `Submit failed: ${String(e)}` },
-                      ]);
+                      setSubmitFlash({
+                        kind: "err",
+                        text: `Submit failed: ${String(e).slice(0, 80)}`,
+                      });
                     }
+                    submitFlashTimer.current = window.setTimeout(
+                      () => setSubmitFlash(null),
+                      5000,
+                    );
                   }}
                   className="border-l border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   title={`Submit this progress to ${settings.teacher_url}`}
                 >
                   → Submit
                 </button>
+              )}
+              {submitFlash && (
+                <span
+                  className={
+                    "border-l border-zinc-300 dark:border-zinc-700 px-2 py-1 text-[11px] tabular-nums " +
+                    (submitFlash.kind === "ok"
+                      ? "text-emerald-700 dark:text-emerald-300"
+                      : "text-rose-700 dark:text-rose-300")
+                  }
+                >
+                  {submitFlash.kind === "ok" ? "✓" : "✗"} {submitFlash.text}
+                </span>
               )}
             </div>
           )}
