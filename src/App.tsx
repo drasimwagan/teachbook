@@ -30,6 +30,14 @@ import {
   summary,
   type TestProgress,
 } from "./lib/progress";
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40);
+}
 import { useHistory } from "./lib/useHistory";
 import type { Notebook } from "./types";
 import "./App.css";
@@ -98,6 +106,10 @@ function App() {
   const [testMode, setTestMode] = useState(false);
   const [progress, setProgress] = useState<TestProgress | null>(null);
   const [progressPath, setProgressPath] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const autosaveTimer = useRef<number | null>(null);
 
   const history = useHistory();
 
@@ -320,11 +332,25 @@ function App() {
   const totalSteps = notebook?.totalSteps ?? 0;
   const isLocked = notebook?.metadata.locked === true;
 
-  const startNewProgress = useCallback(() => {
+  const startNewProgress = useCallback(async () => {
     if (!notebook) return;
-    setProgress(emptyProgress(notebook));
-    setProgressPath(null);
-  }, [notebook]);
+    const next = emptyProgress(notebook);
+    // Auto-assign a stable filename so auto-save has somewhere to land
+    // without prompting. Pattern: <slug>-<student>-<YYYY-MM-DD>.json.
+    // Same student doing multiple attempts on the same day shares the file
+    // (latest state wins) — intentional, matches "the current attempt".
+    try {
+      const dir = await invoke<string>("user_progress_path");
+      const titleSlug = slugify(notebook.metadata.title) || "progress";
+      const who = slugify(settings?.student_name ?? "anon") || "anon";
+      const date = new Date().toISOString().slice(0, 10);
+      setProgressPath(`${dir}/${titleSlug}-${who}-${date}.json`);
+    } catch {
+      setProgressPath(null);
+    }
+    setProgress(next);
+    setSaveState("idle");
+  }, [notebook, settings?.student_name]);
 
   const saveProgress = useCallback(async () => {
     if (!progress) return;
@@ -352,7 +378,9 @@ function App() {
     try {
       await invoke("save_notebook", { path, contents: serializeProgress(progress) });
       setProgressPath(path);
+      setSaveState("saved");
     } catch (e) {
+      setSaveState("error");
       setParseErrors([{ message: `Save progress failed: ${String(e)}` }]);
     }
   }, [progress, progressPath]);
@@ -374,10 +402,36 @@ function App() {
       const contents = await invoke<string>("load_notebook", { path: selected });
       setProgress(parseProgress(contents));
       setProgressPath(selected);
+      setSaveState("saved");
     } catch (e) {
       setParseErrors([{ message: `Load progress failed: ${String(e)}` }]);
     }
   }, []);
+
+  // Auto-save: any change to progress triggers a debounced write back to
+  // the current path. Runs even when the app is hidden; cheap (small JSON).
+  // If there's no path yet (progress loaded without one via startNewProgress
+  // failure path), we skip — user hits manual Save to pick a location.
+  useEffect(() => {
+    if (!progress || !progressPath) return;
+    if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
+    setSaveState((prev) => (prev === "idle" || prev === "saved" ? "saving" : prev));
+    autosaveTimer.current = window.setTimeout(async () => {
+      try {
+        await invoke("save_notebook", {
+          path: progressPath,
+          contents: serializeProgress(progress),
+        });
+        setSaveState("saved");
+      } catch (e) {
+        setSaveState("error");
+        console.warn("autosave failed:", e);
+      }
+    }, 1500);
+    return () => {
+      if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
+    };
+  }, [progress, progressPath]);
 
   const handlePrimitivePatch = useCallback(
     (
@@ -557,10 +611,39 @@ function App() {
                 onClick={saveProgress}
                 disabled={!progress}
                 className="border-l border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:hover:bg-transparent"
-                title="Save progress to disk"
+                title={
+                  progressPath
+                    ? `Saving to ${progressPath} — click to save to a different location`
+                    : "Save progress to a chosen location"
+                }
               >
-                Save
+                Save…
               </button>
+              {progress && progressPath && (
+                <span
+                  className={
+                    "px-2 py-1 text-[10px] border-l border-zinc-300 dark:border-zinc-700 tabular-nums " +
+                    (saveState === "saving"
+                      ? "text-zinc-500"
+                      : saveState === "error"
+                        ? "text-rose-600 dark:text-rose-400"
+                        : "text-emerald-600 dark:text-emerald-400")
+                  }
+                  title={
+                    saveState === "error"
+                      ? "Auto-save failed — click Save to retry"
+                      : `Auto-saving to ${progressPath}`
+                  }
+                >
+                  {saveState === "saving"
+                    ? "saving…"
+                    : saveState === "error"
+                      ? "save err"
+                      : saveState === "saved"
+                        ? "✓ saved"
+                        : "idle"}
+                </span>
+              )}
               {progress && (() => {
                 const s = summary(progress);
                 return (
